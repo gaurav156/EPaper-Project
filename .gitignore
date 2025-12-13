@@ -1,0 +1,12 @@
+# Node
+node_modules/
+
+# Env
+.env
+
+# React
+frontend/epaper-frontend/node_modules/
+frontend/epaper-frontend/build/
+
+# Logs
+npm-debug.log*
