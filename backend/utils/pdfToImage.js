@@ -3,12 +3,15 @@ const path = require("path");
 
 const convertPageToImage = (pdfPath, pageNumber, outputDir) => {
   return new Promise((resolve, reject) => {
-    const outputFile = path.join(outputDir, `page-${pageNumber}`);
-    const cmd = `pdftoppm -png -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputFile}"`;
+    const outputPrefix = path.join(outputDir, `page-${pageNumber}`);
+    const cmd = `pdftoppm -png -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputPrefix}"`;
 
     exec(cmd, (err) => {
       if (err) return reject(err);
-      resolve(`${outputFile}-1.png`);
+
+      // pdftoppm always appends the page number to the output prefix
+      const imagePath = `${outputPrefix}-${pageNumber}.png`;
+      resolve(imagePath);
     });
   });
 };

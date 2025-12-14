@@ -77,7 +77,22 @@ function Viewer() {
               background: "rgba(0,0,255,0.25)",
               cursor: "pointer"
             }}
-            onClick={() => alert("Article clicked")}
+            onClick={async () => {
+              const res = await API.post(
+                "/articles/extract",
+                {
+                  s3Key: key,
+                  pageNumber: page,
+                  mask,
+                  newspaperName: "Midday English",
+                  editionDate: "2025-12-14"
+                },
+                { responseType: "blob" }
+              );
+
+              const url = URL.createObjectURL(res.data);
+              window.open(url);
+            }}
           />
         ))}
       </div>
