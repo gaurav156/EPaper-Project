@@ -5,6 +5,9 @@ import Viewer from "./pages/Viewer";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminEdition from "./pages/AdminEdition";
 import AdminMask from "./pages/AdminMask";
+import ReaderHome from "./pages/ReaderHome";
+import ReaderEdition from "./pages/ReaderEdition";
+import ReaderPage from "./pages/ReaderPage";
 
 function App() {
   return (
@@ -19,6 +22,9 @@ function App() {
           path="/admin/mask/:editionId/page/:pageNumber"
           element={<AdminMask />}
         />
+        <Route path="/read" element={<ReaderHome />} />
+        <Route path="/read/:date" element={<ReaderEdition />} />
+        <Route path="/read/:date/page/:pageNumber" element={<ReaderPage />} />
       </Routes>
     </BrowserRouter>
   );

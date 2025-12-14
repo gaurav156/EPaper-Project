@@ -88,7 +88,7 @@ function Viewer() {
                   s3Key: key,
                   pageNumber: page,
                   mask,
-                  newspaperName: "Midday English",
+                  newspaperName: "MyNews English",
                   editionDate: "2025-12-14"
                 },
                 { responseType: "blob" }
