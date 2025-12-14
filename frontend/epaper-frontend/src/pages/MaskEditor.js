@@ -47,7 +47,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
         ...normalizedRect
       });
 
-      // ✅ IMPORTANT: update local state immediately
+      // IMPORTANT: update local state immediately
       setSavedMasks((prev) => [...prev, res.data]);
 
       setStart(null);

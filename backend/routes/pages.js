@@ -14,10 +14,10 @@ router.get("/image", async (req, res) => {
   }
 
   try {
-    // 1️⃣ Download PDF from S3
+    // Download PDF from S3
     const localPdfPath = await downloadPdfFromS3(s3Key);
 
-    // 2️⃣ Convert page to image
+    // Convert page to image
     const outputDir = path.join(__dirname, "../temp");
     const imagePath = await convertPageToImage(
       localPdfPath,
@@ -25,7 +25,7 @@ router.get("/image", async (req, res) => {
       outputDir
     );
 
-    // 3️⃣ Send image
+    // Send image
     res.sendFile(imagePath);
   } catch (err) {
     console.error("Page image error:", err);
