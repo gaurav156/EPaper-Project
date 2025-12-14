@@ -1,62 +1,94 @@
 import { useEffect, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
 import { useSearchParams } from "react-router-dom";
 import API from "../services/api";
-
-pdfjs.GlobalWorkerOptions.workerSrc =
-  "//unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
 function Viewer() {
   const [params] = useSearchParams();
   const key = params.get("key");
 
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [numPages, setNumPages] = useState(null);
   const [page, setPage] = useState(1);
-  const [zoom, setZoom] = useState(1.2);
+  const [zoom, setZoom] = useState(1);
+  const [masks, setMasks] = useState([]);
+  const [pageImageUrl, setPageImageUrl] = useState(null);
 
+  // Fetch masks for current page
   useEffect(() => {
-    const fetchSignedUrl = async () => {
+    API.get(`/masks?editionDate=2025-12-14&pageNumber=${page}`)
+      .then((res) => setMasks(res.data));
+  }, [page]);
+
+  // Fetch page image from backend
+  useEffect(() => {
+    const fetchPageImage = async () => {
       try {
-        const res = await API.get(`/upload/signed-url?key=${key}`);
-        setPdfUrl(res.data.url);
+        const res = await API.get(
+          `/pages/image?s3Key=${key}&pageNumber=${page}`,
+          { responseType: "blob" }
+        );
+
+        setPageImageUrl(URL.createObjectURL(res.data));
       } catch (err) {
-        console.error("Failed to get signed URL", err);
+        console.error("Failed to load page image", err);
       }
     };
 
-    fetchSignedUrl();
-  }, [key]);
-
-  if (!pdfUrl) return <p>Loading PDF...</p>;
+    fetchPageImage();
+  }, [key, page]);
 
   return (
     <div>
       <h2>Newspaper Viewer</h2>
 
-      <div>
-        <button onClick={() => setZoom((z) => z - 0.1)}>-</button>
-        <button onClick={() => setZoom((z) => z + 0.1)}>+</button>
+      {/* Zoom Controls */}
+      <div style={{ marginBottom: 10 }}>
+        <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>
+          -
+        </button>
+        <span style={{ margin: "0 10px" }}>
+          Zoom: {(zoom * 100).toFixed(0)}%
+        </span>
+        <button onClick={() => setZoom((z) => Math.min(3, z + 0.1))}>
+          +
+        </button>
       </div>
 
-      <Document
-        file={pdfUrl}
-        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-        onLoadError={(err) => console.error("PDF load error:", err)}
+      {/* Page Image + Masks */}
+      <div
+        style={{
+          position: "relative",
+          display: "inline-block",
+          transform: `scale(${zoom})`,
+          transformOrigin: "top left"
+        }}
       >
-        <Page pageNumber={page} scale={zoom} />
-      </Document>
+        {pageImageUrl && (
+          <img src={pageImageUrl} alt="page" style={{ display: "block" }} />
+        )}
 
-      <div>
+        {masks.map((mask) => (
+          <div
+            key={mask._id}
+            style={{
+              position: "absolute",
+              left: `${mask.x * 100}%`,
+              top: `${mask.y * 100}%`,
+              width: `${mask.width * 100}%`,
+              height: `${mask.height * 100}%`,
+              background: "rgba(0,0,255,0.25)",
+              cursor: "pointer"
+            }}
+            onClick={() => alert("Article clicked")}
+          />
+        ))}
+      </div>
+
+      {/* Page Navigation */}
+      <div style={{ marginTop: 10 }}>
         <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
           Prev
         </button>
-        <span>
-          Page {page} / {numPages}
-        </span>
-        <button disabled={page >= numPages} onClick={() => setPage(page + 1)}>
-          Next
-        </button>
+        <span style={{ margin: "0 10px" }}>Page {page}</span>
+        <button onClick={() => setPage(page + 1)}>Next</button>
       </div>
     </div>
   );

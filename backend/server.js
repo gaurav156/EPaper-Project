@@ -25,6 +25,12 @@ app.use("/api/auth", authRoutes);
 const uploadRoutes = require("./routes/upload");
 app.use("/api/upload", uploadRoutes);
 
+const maskRoutes = require("./routes/masks");
+app.use("/api/masks", maskRoutes);
+
+const pageRoutes = require("./routes/pages");
+app.use("/api/pages", pageRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

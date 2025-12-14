@@ -10,3 +10,6 @@ frontend/epaper-frontend/build/
 
 # Logs
 npm-debug.log*
+
+# Temp files
+temp/
