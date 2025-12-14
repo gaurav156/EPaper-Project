@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const s3 = require("../utils/s3");
+const Edition = require("../models/Edition");
 
 const router = express.Router();
 
@@ -23,21 +24,32 @@ router.post("/", upload.single("file"), async (req, res) => {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: fileKey,
       Body: file.buffer,
-      ContentType: file.mimetype,
+      ContentType: file.mimetype
     };
 
     const result = await s3.upload(params).promise();
 
+    const edition = new Edition({
+      newspaperName: req.body.newspaperName || "MyNews English",
+      editionDate: req.body.editionDate || "2025-12-14",
+      s3Key: result.Key,
+      pageCount: req.body.pageCount || 8
+    });
+
+    await edition.save();
+
     res.json({
-      message: "File uploaded successfully ✅",
+      message: "Upload successful ✅",
       fileUrl: result.Location,
       key: result.Key,
+      edition
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Signed URL
 router.get("/signed-url", async (req, res) => {
   const { key } = req.query;
 

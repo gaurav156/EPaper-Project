@@ -1,31 +1,31 @@
-import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import API from "../services/api";
 import MaskEditor from "./MaskEditor";
 
 function AdminMask() {
-  const [page, setPage] = useState(1);
+  const { editionId, pageNumber } = useParams();
+  const [edition, setEdition] = useState(null);
 
-  const s3Key = "newspapers/1765717663336_Midday English 14-12 3 pg.pdf";
-  const editionDate = "2025-12-14";
+  useEffect(() => {
+    API.get(`/editions/${editionId}`).then((res) => setEdition(res.data));
+  }, [editionId]);
+
+  if (!edition) return <p>Loading...</p>;
 
   return (
     <div>
-      <h2>Article Mask Editor</h2>
-
-      <div style={{ marginBottom: 10 }}>
-        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
-          Prev
-        </button>
-        <span style={{ margin: "0 10px" }}>Page {page}</span>
-        <button onClick={() => setPage(page + 1)}>Next</button>
-      </div>
+      <h2>
+        {edition.newspaperName} - Page {pageNumber}
+      </h2>
 
       <MaskEditor
         pageImageUrl={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-          s3Key
-        )}&pageNumber=${page}`}
-        pageNumber={page}
-        editionDate={editionDate}
-        s3Key={s3Key}
+          edition.s3Key
+        )}&pageNumber=${pageNumber}`}
+        pageNumber={Number(pageNumber)}
+        editionDate={edition.editionDate}
+        s3Key={edition.s3Key}
       />
     </div>
   );

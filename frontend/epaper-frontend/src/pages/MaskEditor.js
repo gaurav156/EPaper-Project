@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import API from "../services/api";
 
 function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
-  const containerRef = useRef(null);
+  const imageRef = useRef(null);
   const [start, setStart] = useState(null);
   const [rect, setRect] = useState(null);
   const [savedMasks, setSavedMasks] = useState([]);
+  const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
   const handleMouseDown = (e) => {
-    const rect = containerRef.current.getBoundingClientRect();
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
     setStart({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -17,20 +20,26 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
 
   const handleMouseMove = (e) => {
     if (!start) return;
-    const rect = containerRef.current.getBoundingClientRect();
+    const bounds = imageRef.current.getBoundingClientRect();
 
-    setRect({
-      x: start.x,
-      y: start.y,
-      width: e.clientX - rect.left - start.x,
-      height: e.clientY - rect.top - start.y
-    });
+    const rawX = e.clientX - bounds.left;
+    const rawY = e.clientY - bounds.top;
+
+    const currentX = clamp(rawX, 0, bounds.width);
+    const currentY = clamp(rawY, 0, bounds.height);
+
+    const x = Math.min(start.x, currentX);
+    const y = Math.min(start.y, currentY);
+    const width = Math.abs(currentX - start.x);
+    const height = Math.abs(currentY - start.y);
+
+    setRect({ x, y, width, height });
   };
 
   const handleMouseUp = async () => {
-    if (!rect || !containerRef.current) return;
+    if (!rect || !imageRef.current) return;
 
-    const container = containerRef.current.getBoundingClientRect();
+    const container = imageRef.current.getBoundingClientRect();
 
     const normalizedRect = {
       x: rect.x / container.width,
@@ -64,13 +73,20 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
 
   return (
     <div
-      ref={containerRef}
       style={{ position: "relative", display: "inline-block" }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      <img src={pageImageUrl} alt="page" />
+      <img
+        ref={imageRef}
+        src={pageImageUrl}
+        alt="page"
+        style={{
+          display: "block",
+          userSelect: "none"
+        }}
+      />
 
       {savedMasks.map((mask) => (
         <div

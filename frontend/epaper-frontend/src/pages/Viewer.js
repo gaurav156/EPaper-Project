@@ -62,7 +62,11 @@ function Viewer() {
         }}
       >
         {pageImageUrl && (
-          <img src={pageImageUrl} alt="page" style={{ display: "block" }} />
+          <img
+            src={pageImageUrl}
+            alt="page"
+            style={{ display: "block", userSelect: "none" }}
+          />
         )}
 
         {masks.map((mask) => (
