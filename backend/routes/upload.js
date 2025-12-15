@@ -2,6 +2,9 @@ const express = require("express");
 const multer = require("multer");
 const s3 = require("../utils/s3");
 const Edition = require("../models/Edition");
+const fs = require("fs");
+const path = require("path");
+const getPdfPageCount = require("../utils/pdfInfo");
 
 const router = express.Router();
 
@@ -27,16 +30,33 @@ router.post("/", upload.single("file"), async (req, res) => {
       ContentType: file.mimetype
     };
 
+    const tempDir = path.join(__dirname, "..", "temp");
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir);
+    }
+
+    const localPdfPath = path.join(
+      tempDir,
+      `${Date.now()}_${file.originalname}`
+    );
+
+    // Save file locally
+    fs.writeFileSync(localPdfPath, file.buffer);
+
+    const pageCount = await getPdfPageCount(localPdfPath);
+
     const result = await s3.upload(params).promise();
 
     const edition = new Edition({
       newspaperName: req.body.newspaperName || "MyNews English",
       editionDate: req.body.editionDate || "2025-12-14",
       s3Key: result.Key,
-      pageCount: req.body.pageCount || 8
+      pageCount
     });
 
     await edition.save();
+
+    fs.unlinkSync(localPdfPath);
 
     res.json({
       message: "Upload successful ✅",
