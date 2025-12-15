@@ -8,6 +8,7 @@ import AdminMask from "./pages/AdminMask";
 import ReaderHome from "./pages/ReaderHome";
 import ReaderEdition from "./pages/ReaderEdition";
 import ReaderPage from "./pages/ReaderPage";
+import "./App.css";
 
 function App() {
   return (

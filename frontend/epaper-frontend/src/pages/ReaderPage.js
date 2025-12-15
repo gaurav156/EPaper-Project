@@ -30,10 +30,15 @@ function ReaderPage() {
     });
   }, [edition, pageNumber, date]);
 
+  useEffect(() => {
+    document.body.style.overflow = articleUrl ? "hidden" : "auto";
+    return () => (document.body.style.overflow = "auto");
+  }, [articleUrl]);
+
   if (!edition) return <p>Loading...</p>;
 
   return (
-    <div>
+    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
       <h2>
         {edition.newspaperName} — Page {pageNumber}
       </h2>
@@ -46,14 +51,13 @@ function ReaderPage() {
         {masks.map((mask) => (
           <div
             key={mask._id}
+            className="article-mask"
+            title="Click to read article"
             style={{
-              position: "absolute",
-              left: `${mask.x * 100}%`,
-              top: `${mask.y * 100}%`,
-              width: `${mask.width * 100}%`,
-              height: `${mask.height * 100}%`,
-              background: "rgba(0,0,255,0.25)",
-              cursor: "pointer"
+                left: `${mask.x * 100}%`,
+                top: `${mask.y * 100}%`,
+                width: `${mask.width * 100}%`,
+                height: `${mask.height * 100}%`
             }}
             onClick={async () => {
               const res = await API.post(
@@ -77,26 +81,48 @@ function ReaderPage() {
       {/* Article Modal */}
       {articleUrl && (
         <div
-          style={{
+            style={{
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
-          }}
-          onClick={() => setArticleUrl(null)}
+            justifyContent: "center",
+            zIndex: 1000
+            }}
+            onClick={() => setArticleUrl(null)}
         >
-          <div style={{ background: "#fff", padding: 10 }}>
+            <div
+            style={{
+                background: "#fff",
+                padding: 12,
+                maxHeight: "90vh",
+                overflow: "auto",
+                position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+            <button
+                onClick={() => setArticleUrl(null)}
+                style={{
+                position: "absolute",
+                top: 8,
+                right: 8
+                }}
+            >
+                ✕
+            </button>
+
             <img src={articleUrl} alt="article" />
-            <div style={{ textAlign: "right" }}>
-              <a href={articleUrl} download>
+
+            <div style={{ textAlign: "right", marginTop: 8 }}>
+                <a href={articleUrl} download>
                 Download
-              </a>
+                </a>
             </div>
-          </div>
+            </div>
         </div>
-      )}
+        )}
     </div>
   );
 }
