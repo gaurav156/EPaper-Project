@@ -1,9 +1,10 @@
-import { Routes, Route, Link, Navigate } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 
 import Upload from "./Upload";
 import Viewer from "./Viewer";
 import AdminEdition from "./AdminEdition";
 import AdminMask from "./AdminMask";
+import AdminHome from "./AdminHome";
 
 function AdminDashboard() {
   const logout = () => {
@@ -31,17 +32,12 @@ function AdminDashboard() {
       {/* Admin Internal Routes */}
       <Routes>
         {/* Default admin page */}
-        <Route
-          path="/"
-          element={<Navigate to="upload" replace />}
-        />
+        <Route path="/" element={<AdminHome />} />
 
         <Route path="upload" element={<Upload />} />
         <Route path="viewer" element={<Viewer />} />
         <Route path="edition/:id" element={<AdminEdition />} />
-        <Route
-          path="mask/:editionId/page/:pageNumber"
-          element={<AdminMask />}
+        <Route path="mask/:editionId/page/:pageNumber" element={<AdminMask />}
         />
       </Routes>
     </div>
