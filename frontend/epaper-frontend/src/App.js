@@ -15,7 +15,7 @@ function App() {
         <Route path="/" element={<ReaderHome />} />
         <Route path="/read" element={<ReaderHome />} />
         <Route path="/read/:date" element={<ReaderEdition />} />
-        <Route path="/read/:date/page/:pageNumber" element={<ReaderPage />} />
+        <Route path="/read/:date/edition/:editionId/page/:pageNumber" element={<ReaderPage />} />
 
         {/* Admin Login */}
         <Route path="/admin/login" element={<AdminLogin />} />

@@ -24,7 +24,7 @@ function ReaderHome() {
 
       {editions.map((edition) => (
         <div
-          key={edition._id}
+          key={edition.editionDate}
           style={{
             padding: 10,
             borderBottom: "1px solid #ddd",

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 function ReaderPage() {
-  const { date, pageNumber } = useParams();
+  const { date, editionId, pageNumber } = useParams();
   const [edition, setEdition] = useState(null);
   const [masks, setMasks] = useState([]);
   const [pageImageUrl, setPageImageUrl] = useState(null);
@@ -11,11 +11,12 @@ function ReaderPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    API.get("/editions").then((res) => {
-      const found = res.data.find((e) => e.editionDate === date);
-      setEdition(found);
+    if (!editionId) return;
+
+    API.get(`/editions/${editionId}`).then(res => {
+      setEdition(res.data);
     });
-  }, [date]);
+  }, [editionId]);
 
   useEffect(() => {
     if (!edition) return;
@@ -137,7 +138,9 @@ function ReaderPage() {
         <button
           disabled={Number(pageNumber) <= 1}
           onClick={() =>
-            navigate(`/read/${date}/page/${Number(pageNumber) - 1}`)
+            navigate(
+              `/read/${date}/edition/${editionId}/page/${Number(pageNumber) - 1}`
+            )
           }
         >
           ← Prev
@@ -150,7 +153,9 @@ function ReaderPage() {
         <button
           disabled={Number(pageNumber) >= edition.pageCount}
           onClick={() =>
-            navigate(`/read/${date}/page/${Number(pageNumber) + 1}`)
+            navigate(
+              `/read/${date}/edition/${editionId}/page/${Number(pageNumber) + 1}`
+            )
           }
         >
           Next →

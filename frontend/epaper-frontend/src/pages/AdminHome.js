@@ -52,7 +52,11 @@ function AdminHome() {
           }}
         >
           <div>
-            <strong>{edition.newspaperName}</strong>
+            <strong>
+              {edition.newspaperName}
+              {edition.city && ` — ${edition.city}`}
+              {edition.editionType === "SPECIAL" && ` (${edition.category})`}
+            </strong>
             <div style={{ fontSize: 12, color: "#666" }}>
               Pages: {edition.pageCount}
             </div>

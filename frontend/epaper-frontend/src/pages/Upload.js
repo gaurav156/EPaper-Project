@@ -6,6 +6,9 @@ function Upload() {
   const [file, setFile] = useState(null);
   const [editionDate, setEditionDate] = useState(null);
   const navigate = useNavigate();
+  const [city, setCity] = useState("");
+  const [editionType, setEditionType] = useState("REGULAR");
+  const [category, setCategory] = useState("");
 
   const handleUpload = async () => {
     if (!file) {
@@ -16,9 +19,16 @@ function Upload() {
       return alert("Only PDF files allowed");
     }
 
+    if (!editionDate) {
+      return alert("Please select edition date");
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("editionDate", editionDate);
+    formData.append("city", city);
+    formData.append("editionType", editionType);
+    formData.append("category", category);
 
     try {
       const res = await API.post("/upload", formData);
@@ -41,6 +51,18 @@ function Upload() {
       <input
         type="date"
         onChange={e => setEditionDate(e.target.value)}
+      />
+      <select onChange={e => setEditionType(e.target.value)}>
+        <option value="REGULAR">Regular</option>
+        <option value="SPECIAL">Special</option>
+      </select>
+      <input
+        placeholder="City (Mumbai, Pune...)"
+        onChange={e => setCity(e.target.value)}
+      />
+      <input
+        placeholder="Category (Sports, Economy...)"
+        onChange={e => setCategory(e.target.value)}
       />
       <button onClick={handleUpload}>Upload</button>
     </div>

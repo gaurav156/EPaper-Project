@@ -26,6 +26,12 @@ router.post("/", requireAdmin, upload.single("file"), async (req, res) => {
       return res.status(400).json({ message: "Edition date required" });
     }
 
+    if (req.body.editionType === "SPECIAL" && !req.body.category) {
+      return res
+        .status(400)
+        .json({ message: "Category required for special editions" });
+    }
+
     const fileKey = `newspapers/${Date.now()}_${file.originalname}`;
 
     const params = {
@@ -53,10 +59,13 @@ router.post("/", requireAdmin, upload.single("file"), async (req, res) => {
     const result = await s3.upload(params).promise();
 
     const edition = new Edition({
-      newspaperName: req.body.newspaperName || "MyNews English",
+      newspaperName: req.body.newspaperName || "MyNews",
       editionDate: req.body.editionDate,
       s3Key: result.Key,
-      pageCount
+      pageCount,
+      city: req.body.city || null,
+      editionType: req.body.editionType || "REGULAR",
+      category: req.body.category || null
     });
 
     await edition.save();

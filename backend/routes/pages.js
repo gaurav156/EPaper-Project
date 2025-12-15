@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const convertPageToImage = require("../utils/pdfToImage");
 const downloadPdfFromS3 = require("../utils/s3Download");
 
@@ -17,12 +18,23 @@ router.get("/image", async (req, res) => {
     const localPdfPath = await downloadPdfFromS3(s3Key);
 
     // Convert page to image
-    const outputDir = path.join(__dirname, "../temp");
+    const editionTempDir = path.join(
+      __dirname,
+      "../temp",
+      s3Key.replace(/[^a-zA-Z0-9]/g, "_")
+    );
+
+    if (!fs.existsSync(editionTempDir)) {
+      fs.mkdirSync(editionTempDir, { recursive: true });
+    }
+
     const imagePath = await convertPageToImage(
       localPdfPath,
       pageNumber,
-      outputDir
+      editionTempDir
     );
+
+    res.setHeader("Cache-Control", "no-store");
 
     // Send image
     res.sendFile(imagePath);
