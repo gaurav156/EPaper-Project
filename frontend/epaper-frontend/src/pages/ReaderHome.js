@@ -7,7 +7,15 @@ function ReaderHome() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    API.get("/editions").then((res) => setEditions(res.data));
+    API.get("/editions").then((res) => {
+      const uniqueDates = Array.from(
+      new Set(res.data.map(e => e.editionDate))
+    ).map(date => ({
+      editionDate: date
+    }));
+
+    setEditions(uniqueDates);
+    });
   }, []);
 
   return (
@@ -24,7 +32,7 @@ function ReaderHome() {
           }}
           onClick={() => navigate(`/read/${edition.editionDate}`)}
         >
-          <strong>{edition.editionDate}</strong> — {edition.newspaperName}
+          <strong>{edition.editionDate}</strong>
         </div>
       ))}
     </div>

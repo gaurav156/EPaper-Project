@@ -1,10 +1,11 @@
 const express = require("express");
 const ArticleMask = require("../models/ArticleMask");
+const requireAdmin = require("../middleware/requireAdmin");
 
 const router = express.Router();
 
 // Save mask
-router.post("/", async (req, res) => {
+router.post("/", requireAdmin, async (req, res) => {
   try {
     const mask = new ArticleMask(req.body);
     await mask.save();
@@ -26,7 +27,7 @@ router.get("/", async (req, res) => {
   res.json(masks);
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAdmin, async (req, res) => {
   await ArticleMask.findByIdAndDelete(req.params.id);
   res.json({ message: "Mask deleted" });
 });

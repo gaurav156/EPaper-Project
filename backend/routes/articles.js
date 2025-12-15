@@ -17,10 +17,10 @@ router.post("/extract", async (req, res) => {
   } = req.body;
 
   try {
-    // 1️⃣ Download PDF
+    // Download PDF
     const localPdf = await downloadPdfFromS3(s3Key);
 
-    // 2️⃣ Convert page to image
+    // Convert page to image
     const tempDir = path.join(__dirname, "../temp");
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
@@ -30,7 +30,7 @@ router.post("/extract", async (req, res) => {
       tempDir
     );
 
-    // 3️⃣ Crop article
+    // Crop article
     const footerText = `${newspaperName} | ${editionDate} | Page ${pageNumber}`;
 
     const articleImagePath = await cropArticle({

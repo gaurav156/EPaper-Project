@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 function ReaderPage() {
@@ -8,6 +8,7 @@ function ReaderPage() {
   const [masks, setMasks] = useState([]);
   const [pageImageUrl, setPageImageUrl] = useState(null);
   const [articleUrl, setArticleUrl] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     API.get("/editions").then((res) => {
@@ -123,6 +124,38 @@ function ReaderPage() {
             </div>
         </div>
         )}
+
+      <div
+        style={{
+          marginTop: 16,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 12
+        }}
+      >
+        <button
+          disabled={Number(pageNumber) <= 1}
+          onClick={() =>
+            navigate(`/read/${date}/page/${Number(pageNumber) - 1}`)
+          }
+        >
+          ← Prev
+        </button>
+
+        <span>
+          Page {pageNumber} of {edition.pageCount}
+        </span>
+
+        <button
+          disabled={Number(pageNumber) >= edition.pageCount}
+          onClick={() =>
+            navigate(`/read/${date}/page/${Number(pageNumber) + 1}`)
+          }
+        >
+          Next →
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ const User = require("../models/User");
 const router = express.Router();
 
 /**
- * ADMIN REGISTER (temporary – for first admin only)
+ * ADMIN REGISTER (one-time or protected later)
  */
 router.post("/register-admin", async (req, res) => {
   try {
@@ -23,7 +23,7 @@ router.post("/register-admin", async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      isAdmin: true,
+      isAdmin: true
     });
 
     await user.save();
@@ -35,7 +35,7 @@ router.post("/register-admin", async (req, res) => {
 });
 
 /**
- * LOGIN (Admin only for now)
+ * LOGIN (Admin only)
  */
 router.post("/login", async (req, res) => {
   try {
@@ -52,7 +52,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, isAdmin: user.isAdmin },
+      { id: user._id, isAdmin: true },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );

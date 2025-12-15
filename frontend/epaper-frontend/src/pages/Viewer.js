@@ -10,6 +10,7 @@ function Viewer() {
   const [zoom, setZoom] = useState(1);
   const [masks, setMasks] = useState([]);
   const [pageImageUrl, setPageImageUrl] = useState(null);
+  const [edition, setEdition] = useState(null);
 
   // Fetch masks for current page
   useEffect(() => {
@@ -34,6 +35,14 @@ function Viewer() {
 
     fetchPageImage();
   }, [key, page]);
+
+  useEffect(() => {
+    if (!key) return;
+
+    API.get(`/editions/by-key?s3Key=${key}`).then(res => {
+      setEdition(res.data);
+    });
+  }, [key]);
 
   return (
     <div>
@@ -103,11 +112,23 @@ function Viewer() {
 
       {/* Page Navigation */}
       <div style={{ marginTop: 10 }}>
-        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+        <button
+          disabled={page <= 1}
+          onClick={() => setPage(page - 1)}
+        >
           Prev
         </button>
-        <span style={{ margin: "0 10px" }}>Page {page}</span>
-        <button onClick={() => setPage(page + 1)}>Next</button>
+
+        <span>
+          Page {page} of {edition?.pageCount}
+        </span>
+
+        <button
+          disabled={!edition || page >= edition.pageCount}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
       </div>
     </div>
   );

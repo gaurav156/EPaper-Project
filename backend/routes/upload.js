@@ -5,6 +5,7 @@ const Edition = require("../models/Edition");
 const fs = require("fs");
 const path = require("path");
 const getPdfPageCount = require("../utils/pdfInfo");
+const requireAdmin = require("../middleware/requireAdmin");
 
 const router = express.Router();
 
@@ -13,12 +14,16 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Upload PDF/Image
-router.post("/", upload.single("file"), async (req, res) => {
+router.post("/", requireAdmin, upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
 
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    if (!req.body.editionDate) {
+      return res.status(400).json({ message: "Edition date required" });
     }
 
     const fileKey = `newspapers/${Date.now()}_${file.originalname}`;
@@ -49,7 +54,7 @@ router.post("/", upload.single("file"), async (req, res) => {
 
     const edition = new Edition({
       newspaperName: req.body.newspaperName || "MyNews English",
-      editionDate: req.body.editionDate || "2025-12-14",
+      editionDate: req.body.editionDate,
       s3Key: result.Key,
       pageCount
     });
@@ -70,7 +75,7 @@ router.post("/", upload.single("file"), async (req, res) => {
 });
 
 // Signed URL
-router.get("/signed-url", async (req, res) => {
+router.get("/signed-url", requireAdmin, async (req, res) => {
   const { key } = req.query;
 
   const params = {

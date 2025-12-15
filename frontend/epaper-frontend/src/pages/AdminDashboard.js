@@ -1,41 +1,49 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import API from "../services/api";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
+
+import Upload from "./Upload";
+import Viewer from "./Viewer";
+import AdminEdition from "./AdminEdition";
+import AdminMask from "./AdminMask";
 
 function AdminDashboard() {
-  const [editions, setEditions] = useState([]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    API.get("/editions").then((res) => setEditions(res.data));
-  }, []);
+  const logout = () => {
+    localStorage.removeItem("adminToken");
+    window.location.href = "/admin/login";
+  };
 
   return (
-    <div>
-      <h2>Admin Dashboard</h2>
+    <div style={{ padding: 16 }}>
+      {/* Admin Header / Navigation */}
+      <header
+        style={{
+          display: "flex",
+          gap: 16,
+          marginBottom: 20,
+          borderBottom: "1px solid #ddd",
+          paddingBottom: 10
+        }}
+      >
+        <Link to="/admin">Dashboard</Link>
+        <Link to="/admin/upload">Upload</Link>
+        <button onClick={logout}>Logout</button>
+      </header>
 
-      {editions.map((edition) => (
-        <div
-          key={edition._id}
-          style={{
-            border: "1px solid #ccc",
-            padding: 10,
-            marginBottom: 10
-          }}
-        >
-          <h3>{edition.newspaperName}</h3>
-          <p>Date: {edition.editionDate}</p>
-          <p>Pages: {edition.pageCount}</p>
+      {/* Admin Internal Routes */}
+      <Routes>
+        {/* Default admin page */}
+        <Route
+          path="/"
+          element={<Navigate to="upload" replace />}
+        />
 
-          <button
-            onClick={() =>
-              navigate(`/admin/edition/${edition._id}`)
-            }
-          >
-            Manage Pages
-          </button>
-        </div>
-      ))}
+        <Route path="upload" element={<Upload />} />
+        <Route path="viewer" element={<Viewer />} />
+        <Route path="edition/:id" element={<AdminEdition />} />
+        <Route
+          path="mask/:editionId/page/:pageNumber"
+          element={<AdminMask />}
+        />
+      </Routes>
     </div>
   );
 }

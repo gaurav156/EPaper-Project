@@ -1,6 +1,5 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 const convertPageToImage = require("../utils/pdfToImage");
 const downloadPdfFromS3 = require("../utils/s3Download");
 
