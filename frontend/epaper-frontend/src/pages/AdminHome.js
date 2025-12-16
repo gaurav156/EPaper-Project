@@ -65,7 +65,7 @@ function AdminHome() {
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() =>
-                navigate(`/admin/viewer?key=${edition.s3Key}`)
+                navigate(`/read/${edition.editionDate}/edition/${edition._id}/page/1`)
               }
             >
               View

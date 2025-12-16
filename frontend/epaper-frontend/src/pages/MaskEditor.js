@@ -6,10 +6,11 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
   const [start, setStart] = useState(null);
   const [rect, setRect] = useState(null);
   const [savedMasks, setSavedMasks] = useState([]);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
   const handleMouseDown = (e) => {
-    if (!imageRef.current) return;
+    if (!imageLoaded || !imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
     setStart({
@@ -19,7 +20,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
   };
 
   const handleMouseMove = (e) => {
-    if (!start) return;
+    if (!imageLoaded || !start) return;
     const bounds = imageRef.current.getBoundingClientRect();
 
     const rawX = e.clientX - bounds.left;
@@ -37,7 +38,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
   };
 
   const handleMouseUp = async () => {
-    if (!rect || !imageRef.current) return;
+    if (!imageLoaded || !rect || !imageRef.current) return;
 
     const container = imageRef.current.getBoundingClientRect();
 
@@ -82,13 +83,14 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
         ref={imageRef}
         src={pageImageUrl}
         alt="page"
+        onLoad={() => setImageLoaded(true)}
         style={{
           display: "block",
           userSelect: "none"
         }}
       />
 
-      {savedMasks.map((mask) => (
+      {imageLoaded && savedMasks.map((mask) => (
         <div
           key={mask._id}
           style={{
@@ -100,10 +102,44 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
             border: "2px solid green",
             background: "rgba(0,255,0,0.15)"
           }}
-        />
+        >
+          {/* Delete button */}
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await API.delete(`/masks/${mask._id}`);
+                setSavedMasks((prev) =>
+                  prev.filter((m) => m._id !== mask._id)
+                );
+              } catch (err) {
+                console.error("Failed to delete mask", err);
+              }
+            }}
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              border: "none",
+              background: "red",
+              color: "white",
+              cursor: "pointer",
+              fontSize: 12,
+              lineHeight: "20px"
+            }}
+          >
+            ×
+          </button>
+        </div>
       ))}
 
-      {rect && (
+      {imageLoaded && rect && (
         <div
           style={{
             position: "absolute",

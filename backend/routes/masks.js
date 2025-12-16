@@ -17,13 +17,16 @@ router.post("/", requireAdmin, async (req, res) => {
 
 // Get masks for a page
 router.get("/", async (req, res) => {
-  const { editionDate, pageNumber } = req.query;
+  const query = {
+    editionDate: req.query.editionDate,
+    pageNumber: Number(req.query.pageNumber)
+  };
 
-  const masks = await ArticleMask.find({
-    editionDate,
-    pageNumber
-  });
+  if (req.query.s3Key) {
+    query.s3Key = req.query.s3Key;
+  }
 
+  const masks = await ArticleMask.find(query);
   res.json(masks);
 });
 

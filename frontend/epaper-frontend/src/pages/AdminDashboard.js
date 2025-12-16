@@ -1,7 +1,6 @@
 import { Routes, Route, Link } from "react-router-dom";
 
 import Upload from "./Upload";
-import Viewer from "./Viewer";
 import AdminEdition from "./AdminEdition";
 import AdminMask from "./AdminMask";
 import AdminHome from "./AdminHome";
@@ -35,9 +34,11 @@ function AdminDashboard() {
         <Route path="/" element={<AdminHome />} />
 
         <Route path="upload" element={<Upload />} />
-        <Route path="viewer" element={<Viewer />} />
-        <Route path="edition/:id" element={<AdminEdition />} />
-        <Route path="mask/:editionId/page/:pageNumber" element={<AdminMask />}
+
+        <Route path="edition/:editionId" element={<AdminEdition />} />
+        <Route
+          path="edition/:editionId/page/:pageNumber"
+          element={<AdminMask />}
         />
       </Routes>
     </div>

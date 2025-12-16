@@ -21,8 +21,11 @@ function ReaderPage() {
   useEffect(() => {
     if (!edition) return;
 
-    API.get(`/masks?editionDate=${date}&pageNumber=${pageNumber}`)
-      .then((res) => setMasks(res.data));
+    API.get(
+      `/masks?editionDate=${date}&pageNumber=${pageNumber}&s3Key=${encodeURIComponent(
+        edition.s3Key
+      )}`
+    ).then((res) => setMasks(res.data));
 
     API.get(
       `/pages/image?s3Key=${edition.s3Key}&pageNumber=${pageNumber}`,
@@ -45,39 +48,51 @@ function ReaderPage() {
         {edition.newspaperName} — Page {pageNumber}
       </h2>
 
-      <div style={{ position: "relative", display: "inline-block" }}>
+      <div
+        style={{ position: "relative", display: "inline-block" }}
+      >
         {pageImageUrl && (
-          <img src={pageImageUrl} alt="page" style={{ display: "block" }} />
+          <img src={pageImageUrl} alt="page" style={{ display: "block", width: "100%" }} />
         )}
 
-        {masks.map((mask) => (
-          <div
-            key={mask._id}
-            className="article-mask"
-            title="Click to read article"
-            style={{
+        {/* Mask overlay layer */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0
+          }}
+        >
+          {masks.map((mask) => (
+            <div
+              key={mask._id}
+              className="article-mask"
+              title="Click to read article"
+              style={{
+                position: "absolute",
                 left: `${mask.x * 100}%`,
                 top: `${mask.y * 100}%`,
                 width: `${mask.width * 100}%`,
-                height: `${mask.height * 100}%`
-            }}
-            onClick={async () => {
-              const res = await API.post(
-                "/articles/extract",
-                {
-                  s3Key: edition.s3Key,
-                  pageNumber: Number(pageNumber),
-                  mask,
-                  newspaperName: edition.newspaperName,
-                  editionDate: edition.editionDate
-                },
-                { responseType: "blob" }
-              );
+                height: `${mask.height * 100}%`,
+                zIndex: 10
+              }}
+              onClick={async () => {
+                const res = await API.post(
+                  "/articles/extract",
+                  {
+                    s3Key: edition.s3Key,
+                    pageNumber: Number(pageNumber),
+                    mask,
+                    newspaperName: edition.newspaperName,
+                    editionDate: edition.editionDate
+                  },
+                  { responseType: "blob" }
+                );
 
-              setArticleUrl(URL.createObjectURL(res.data));
-            }}
-          />
-        ))}
+                setArticleUrl(URL.createObjectURL(res.data));
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Article Modal */}

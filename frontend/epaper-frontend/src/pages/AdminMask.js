@@ -14,9 +14,9 @@ function AdminMask() {
   if (!edition) return <p>Loading...</p>;
 
   return (
-    <div>
+    <div style={{ padding: 20 }}>
       <h2>
-        {edition.newspaperName} - Page {pageNumber}
+        Mask Editor — Page {pageNumber}
       </h2>
 
       <MaskEditor
