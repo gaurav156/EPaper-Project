@@ -22,6 +22,13 @@ function AdminEdition() {
         {edition.city && ` — ${edition.city}`}
       </h2>
 
+      <button
+        onClick={() => navigate("/admin")}
+        style={{ marginBottom: 12 }}
+      >
+        ← Back to dashboard
+      </button>
+
       <p>
         Date: <strong>{edition.editionDate}</strong><br />
         Pages: {edition.pageCount}<br />

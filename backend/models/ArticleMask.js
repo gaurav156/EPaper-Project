@@ -3,15 +3,17 @@ const mongoose = require("mongoose");
 // x, y, width, height are normalized values (0–1)
 const ArticleMaskSchema = new mongoose.Schema(
   {
-    editionDate: { type: String, required: true },
+    editionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Edition",
+      required: true
+    },
     pageNumber: { type: Number, required: true },
 
     x: Number,
     y: Number,
     width: Number,
-    height: Number,
-
-    s3Key: String
+    height: Number
   },
   { timestamps: true }
 );

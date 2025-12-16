@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import API from "../services/api";
 
-function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
+function MaskEditor({ pageImageUrl, pageNumber, editionId, s3Key }) {
   const imageRef = useRef(null);
   const [start, setStart] = useState(null);
   const [rect, setRect] = useState(null);
   const [savedMasks, setSavedMasks] = useState([]);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
   const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
   const handleMouseDown = (e) => {
     if (!imageLoaded || !imageRef.current) return;
+    setIsDrawing(true);
 
     const rect = imageRef.current.getBoundingClientRect();
     setStart({
@@ -38,7 +40,8 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
   };
 
   const handleMouseUp = async () => {
-    if (!imageLoaded || !rect || !imageRef.current) return;
+    if (!isDrawing || !imageLoaded || !rect || !imageRef.current) return;
+    setIsDrawing(false);
 
     const container = imageRef.current.getBoundingClientRect();
 
@@ -51,7 +54,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
 
     try {
       const res = await API.post("/masks", {
-        editionDate,
+        editionId,
         pageNumber,
         s3Key,
         ...normalizedRect
@@ -68,9 +71,9 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
   };
 
   useEffect(() => {
-    API.get(`/masks?editionDate=${editionDate}&pageNumber=${pageNumber}`)
+    API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
       .then((res) => setSavedMasks(res.data));
-  }, [editionDate, pageNumber]);
+  }, [editionId, pageNumber]);
 
   return (
     <div
@@ -110,6 +113,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionDate, s3Key }) {
             }}
             onClick={async (e) => {
               e.stopPropagation();
+              setIsDrawing(false);
               try {
                 await API.delete(`/masks/${mask._id}`);
                 setSavedMasks((prev) =>

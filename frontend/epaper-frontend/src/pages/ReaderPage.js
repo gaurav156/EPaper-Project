@@ -22,9 +22,7 @@ function ReaderPage() {
     if (!edition) return;
 
     API.get(
-      `/masks?editionDate=${date}&pageNumber=${pageNumber}&s3Key=${encodeURIComponent(
-        edition.s3Key
-      )}`
+      `/masks?editionId=${editionId}&pageNumber=${pageNumber}`
     ).then((res) => setMasks(res.data));
 
     API.get(
@@ -33,7 +31,7 @@ function ReaderPage() {
     ).then((res) => {
       setPageImageUrl(URL.createObjectURL(res.data));
     });
-  }, [edition, pageNumber, date]);
+  }, [edition, pageNumber, editionId]);
 
   useEffect(() => {
     document.body.style.overflow = articleUrl ? "hidden" : "auto";
@@ -48,6 +46,16 @@ function ReaderPage() {
         {edition.newspaperName} — Page {pageNumber}
       </h2>
 
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          marginBottom: 12,
+          cursor: "pointer"
+        }}
+      >
+        ← Back
+      </button>
+
       <div
         style={{ position: "relative", display: "inline-block" }}
       >
@@ -59,7 +67,8 @@ function ReaderPage() {
         <div
           style={{
             position: "absolute",
-            inset: 0
+            inset: 0,
+            pointerEvents: "none"
           }}
         >
           {masks.map((mask) => (
@@ -73,7 +82,8 @@ function ReaderPage() {
                 top: `${mask.y * 100}%`,
                 width: `${mask.width * 100}%`,
                 height: `${mask.height * 100}%`,
-                zIndex: 10
+                zIndex: 10,
+                pointerEvents: "auto"
               }}
               onClick={async () => {
                 const res = await API.post(

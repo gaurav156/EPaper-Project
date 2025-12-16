@@ -33,7 +33,7 @@ function Upload() {
     try {
       const res = await API.post("/upload", formData);
       alert("Upload successful");
-      navigate(`/admin/viewer?key=${res.data.key}`);
+      navigate(`/admin/edition/${res.data.edition._id}`);
     } catch (err) {
       console.error(err);
       alert(

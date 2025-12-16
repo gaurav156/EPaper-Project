@@ -7,8 +7,27 @@ const router = express.Router();
 // Save mask
 router.post("/", requireAdmin, async (req, res) => {
   try {
-    const mask = new ArticleMask(req.body);
-    await mask.save();
+    const {
+      editionId,
+      pageNumber,
+      x,
+      y,
+      width,
+      height,
+      s3Key
+    } = req.body;
+
+    const mask = await ArticleMask.create({
+      editionId,
+      pageNumber,
+      x,
+      y,
+      width,
+      height,
+      s3Key
+    });
+
+
     res.json(mask);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -17,16 +36,13 @@ router.post("/", requireAdmin, async (req, res) => {
 
 // Get masks for a page
 router.get("/", async (req, res) => {
-  const query = {
-    editionDate: req.query.editionDate,
-    pageNumber: Number(req.query.pageNumber)
-  };
+  const { editionId, pageNumber } = req.query;
 
-  if (req.query.s3Key) {
-    query.s3Key = req.query.s3Key;
-  }
+  const masks = await ArticleMask.find({
+    editionId,
+    pageNumber
+  });
 
-  const masks = await ArticleMask.find(query);
   res.json(masks);
 });
 
