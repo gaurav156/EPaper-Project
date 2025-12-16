@@ -8,6 +8,7 @@ function ReaderPage() {
   const [masks, setMasks] = useState([]);
   const [pageImageUrl, setPageImageUrl] = useState(null);
   const [articleUrl, setArticleUrl] = useState(null);
+  const [zoom, setZoom] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,8 +57,39 @@ function ReaderPage() {
         ← Back
       </button>
 
+      {/* Zoom Controls */}
+      <div style={{ marginBottom: 10 }}>
+        <button
+          onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}
+        >
+          −
+        </button>
+
+        <span style={{ margin: "0 10px" }}>
+          {(zoom * 100).toFixed(0)}%
+        </span>
+
+        <button
+          onClick={() => setZoom(z => Math.min(3, z + 0.1))}
+        >
+          +
+        </button>
+
+        <button
+          style={{ marginLeft: 10 }}
+          onClick={() => setZoom(1)}
+        >
+          Reset
+        </button>
+      </div>
+
       <div
-        style={{ position: "relative", display: "inline-block" }}
+        style={{
+          position: "relative",
+          display: "inline-block",
+          transform: `scale(${zoom})`,
+          transformOrigin: "top left"
+        }}
       >
         {pageImageUrl && (
           <img src={pageImageUrl} alt="page" style={{ display: "block", width: "100%" }} />
