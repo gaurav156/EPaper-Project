@@ -20,11 +20,27 @@ router.get("/by-key", async (req, res) => {
 });
 
 /**
- * GET all editions
+ * GET editions (optionally filtered by date)
+ * /api/editions?date=YYYY-MM-DD
  */
 router.get("/", async (req, res) => {
-  const editions = await Edition.find().sort({ editionDate: -1 });
-  res.json(editions);
+  try {
+    const { date } = req.query;
+
+    const filter = {};
+    if (date) {
+      filter.editionDate = date;
+    }
+
+    const editions = await Edition.find(filter).sort({
+      city: 1,
+      editionType: 1
+    });
+
+    res.json(editions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
