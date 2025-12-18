@@ -14,18 +14,8 @@ function ReaderPage() {
 
   const pinchStartDistance = useRef(null);
   const pinchStartZoom = useRef(1);
-  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!editionId) return;
-
     API.get(`/editions/${editionId}`).then((res) => {
       setEdition(res.data);
     });
@@ -50,23 +40,19 @@ function ReaderPage() {
   }, [pageNumber]);
 
   useEffect(() => {
-    const onWheel = (e) => {
-      if (!e.ctrlKey) return;
+    document.body.style.overflow = articleUrl ? "hidden" : "hidden";
+    return () => (document.body.style.overflow = "hidden");
+  }, [articleUrl]);
 
-      e.preventDefault(); // stop browser zoom
+  const handleWheel = (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
 
-      setZoom((z) => {
-        const delta = e.deltaY < 0 ? 0.1 : -0.1;
-        return Math.min(3, Math.max(0.5, z + delta));
-      });
-    };
-
-    window.addEventListener("wheel", onWheel, { passive: false });
-
-    return () => {
-      window.removeEventListener("wheel", onWheel);
-    };
-  }, []);
+    setZoom((z) => {
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      return Math.min(3, Math.max(0.5, z + delta));
+    });
+  };
 
   const getTouchDistance = (touches) => {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -97,67 +83,115 @@ function ReaderPage() {
     pinchStartDistance.current = null;
   };
 
-  if (!edition) return <p>Loading…</p>;
+  if (!edition) return <p>Loading...</p>;
 
   return (
     <div
       style={{
-        height: "100vh",
         display: "flex",
-        flexDirection: "column"
+        height: "100vh",
+        overflow: "hidden",
+        userSelect: "none"
       }}
+      onWheel={handleWheel}
     >
-      {/* ---------- Header ---------- */}
-      <div style={{ padding: 16 }}>
-        <h2>
-          {edition.newspaperName} — Page {pageNumber}
-        </h2>
+      {/* LEFT: THUMBNAIL STRIP */}
+      <aside
+        style={{
+          width: 140,
+          overflowY: "auto",
+          borderRight: "1px solid #ddd",
+          padding: 8,
+          background: "#fafafa"
+        }}
+      >
+        {[...Array(edition.pageCount)].map((_, i) => {
+          const p = i + 1;
+          const active = Number(pageNumber) === p;
 
-        <button onClick={() => navigate(-1)}>← Back</button>
+          return (
+            <div
+              key={p}
+              onClick={() =>
+                navigate(`/read/${date}/edition/${editionId}/page/${p}`)
+              }
+              style={{
+                marginBottom: 10,
+                cursor: "pointer",
+                border: active
+                  ? "2px solid #1976d2"
+                  : "1px solid #ccc",
+                padding: 2
+              }}
+            >
+              <img
+                src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                  edition.s3Key
+                )}&pageNumber=${p}`}
+                alt={`Page ${p}`}
+                style={{ width: "100%", display: "block" }}
+                draggable={false}
+              />
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: 12,
+                  marginTop: 4
+                }}
+              >
+                Page {p}
+              </div>
+            </div>
+          );
+        })}
+      </aside>
 
-        {/* Zoom controls */}
-        <div style={{ marginTop: 8 }}>
-          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}>
+      {/* RIGHT: MAIN PAGE VIEW */}
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: 10 }}>
+          <button onClick={() => navigate(-1)}>← Back</button>
+          <span style={{ marginLeft: 16 }}>
+            {edition.newspaperName} — Page {pageNumber}
+          </span>
+        </div>
+
+        {/* Zoom Controls */}
+        <div style={{ padding: "0 10px 10px" }}>
+          <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>
             −
           </button>
-
           <span style={{ margin: "0 10px" }}>
             {(zoom * 100).toFixed(0)}%
           </span>
-
-          <button onClick={() => setZoom(z => Math.min(3, z + 0.1))}>
+          <button onClick={() => setZoom((z) => Math.min(3, z + 0.1))}>
             +
           </button>
-
-          <button style={{ marginLeft: 8 }} onClick={() => setZoom(1)}>
+          <button onClick={() => setZoom(1)} style={{ marginLeft: 10 }}>
             Reset
           </button>
         </div>
-      </div>
 
-      {/* ---------- Scrollable Page Area ---------- */}
-      <div
-        ref={scrollContainerRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          flex: 1,
-          overflow: "auto",
-          borderTop: "1px solid #ddd",
-          borderBottom: "1px solid #ddd"
-        }}
-      >
+        {/* Image Scroll Area */}
         <div
           style={{
-            width: `${zoom * 100}%`,
-            height: "auto"
+            flex: 1,
+            overflow: "auto",
+            borderTop: "1px solid #ddd"
           }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <div
             style={{
               position: "relative",
-              display: "inline-block",
               transform: `scale(${zoom})`,
               transformOrigin: "top left",
               transition: "transform 0.25s ease-out"
@@ -168,88 +202,82 @@ function ReaderPage() {
                 src={pageImageUrl}
                 alt="page"
                 draggable={false}
-                onDragStart={(e) => e.preventDefault()}
                 style={{
                   display: "block",
                   width: "100%",
-                  userSelect: "none",
                   pointerEvents: "none"
                 }}
               />
             )}
 
-            {/* Mask overlay */}
-            <div style={{ position: "absolute", inset: 0 }}>
-              {masks.map((mask) => (
-                <div
-                  key={mask._id}
-                  className="article-mask"
-                  title="Click to read article"
-                  style={{
-                    position: "absolute",
-                    left: `${mask.x * 100}%`,
-                    top: `${mask.y * 100}%`,
-                    width: `${mask.width * 100}%`,
-                    height: `${mask.height * 100}%`
-                  }}
-                  onClick={async () => {
-                    const res = await API.post(
-                      "/articles/extract",
-                      {
-                        s3Key: edition.s3Key,
-                        pageNumber: Number(pageNumber),
-                        mask,
-                        newspaperName: edition.newspaperName,
-                        editionDate: edition.editionDate
-                      },
-                      { responseType: "blob" }
-                    );
+            {/* Mask Overlay */}
+            {masks.map((mask) => (
+              <div
+                key={mask._id}
+                className="article-mask"
+                style={{
+                  position: "absolute",
+                  left: `${mask.x * 100}%`,
+                  top: `${mask.y * 100}%`,
+                  width: `${mask.width * 100}%`,
+                  height: `${mask.height * 100}%`
+                }}
+                onClick={async () => {
+                  const res = await API.post(
+                    "/articles/extract",
+                    {
+                      s3Key: edition.s3Key,
+                      pageNumber: Number(pageNumber),
+                      mask,
+                      newspaperName: edition.newspaperName,
+                      editionDate: edition.editionDate
+                    },
+                    { responseType: "blob" }
+                  );
 
-                    setArticleUrl(URL.createObjectURL(res.data));
-                  }}
-                />
-              ))}
-            </div>
+                  setArticleUrl(URL.createObjectURL(res.data));
+                }}
+              />
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* ---------- Page Navigation ---------- */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 12,
-          padding: 12,
-          background: "#fff",
-          borderTop: "1px solid #ddd"
-        }}
-      >
-        <button
-          disabled={Number(pageNumber) <= 1}
-          onClick={() =>
-            navigate(`/read/${date}/edition/${editionId}/page/${Number(pageNumber) - 1}`)
-          }
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 12,
+            padding: 12,
+            background: "#fff",
+            borderTop: "1px solid #ddd"
+          }}
         >
-          ← Prev
-        </button>
+          <button
+            disabled={Number(pageNumber) <= 1}
+            onClick={() =>
+              navigate(`/read/${date}/edition/${editionId}/page/${Number(pageNumber) - 1}`)
+            }
+          >
+            ← Prev
+          </button>
 
-        <span>
-          Page {pageNumber} of {edition.pageCount}
-        </span>
+          <span>
+            Page {pageNumber} of {edition.pageCount}
+          </span>
 
-        <button
-          disabled={Number(pageNumber) >= edition.pageCount}
-          onClick={() =>
-            navigate(`/read/${date}/edition/${editionId}/page/${Number(pageNumber) + 1}`)
-          }
-        >
-          Next →
-        </button>
-      </div>
+          <button
+            disabled={Number(pageNumber) >= edition.pageCount}
+            onClick={() =>
+              navigate(`/read/${date}/edition/${editionId}/page/${Number(pageNumber) + 1}`)
+            }
+          >
+            Next →
+          </button>
+        </div>
+      </main>
 
-      {/* ---------- Article Modal ---------- */}
+      {/* ARTICLE MODAL */}
       {articleUrl && (
         <div
           style={{
@@ -280,7 +308,7 @@ function ReaderPage() {
               ✕
             </button>
 
-            <img src={articleUrl} alt="article" draggable={false} style={{ userSelect: "none", pointerEvents: "none" }} />
+            <img src={articleUrl} alt="article" />
 
             <div style={{ textAlign: "right", marginTop: 8 }}>
               <a href={articleUrl} download>
