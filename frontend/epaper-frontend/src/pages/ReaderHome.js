@@ -3,38 +3,79 @@ import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 function ReaderHome() {
-  const [editions, setEditions] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    API.get("/editions").then((res) => {
-      const uniqueDates = Array.from(
-      new Set(res.data.map(e => e.editionDate))
-    ).map(date => ({
-      editionDate: date
-    }));
+  // Today in YYYY-MM-DD
+  const today = new Date().toISOString().split("T")[0];
 
-    setEditions(uniqueDates);
-    });
-  }, []);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [editions, setEditions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+
+    API.get(`/editions?date=${selectedDate}`)
+      .then((res) => setEditions(res.data))
+      .finally(() => setLoading(false));
+  }, [selectedDate]);
 
   return (
-    <div>
-      <h2>Select Newspaper Date</h2>
+    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 16 }}>
+      <h2>Read Newspaper</h2>
 
-      {editions.map((edition) => (
-        <div
-          key={edition.editionDate}
-          style={{
-            padding: 10,
-            borderBottom: "1px solid #ddd",
-            cursor: "pointer"
-          }}
-          onClick={() => navigate(`/read/${edition.editionDate}`)}
-        >
-          <strong>{edition.editionDate}</strong>
-        </div>
-      ))}
+      {/* Calendar */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="date"
+          value={selectedDate}
+          max={today}             // 🚫 future dates disabled
+          onChange={(e) => setSelectedDate(e.target.value)}
+        />
+      </div>
+
+      {/* Loading */}
+      {loading && <p>Loading editions…</p>}
+
+      {/* Editions */}
+      {!loading && editions.length === 0 && (
+        <p>No editions available for this date.</p>
+      )}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        {editions.map((edition) => (
+          <div
+            key={edition._id}
+            onClick={() =>
+              navigate(
+                `/read/${edition.editionDate}/edition/${edition._id}/page/1`
+              )
+            }
+            style={{
+              padding: 16,
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              cursor: "pointer",
+              background: "#fff"
+            }}
+          >
+            <h3 style={{ margin: 0 }}>
+              {edition.newspaperName}
+              {edition.city && ` — ${edition.city}`}
+            </h3>
+
+            {edition.editionType === "SPECIAL" && (
+              <span style={{ color: "crimson", fontSize: 13 }}>
+                {edition.category}
+              </span>
+            )}
+
+            <p style={{ marginTop: 6 }}>
+              {edition.pageCount} pages
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
