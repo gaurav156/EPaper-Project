@@ -3,9 +3,25 @@
   background: transparent;
   cursor: pointer;
   transition: background 0.15s ease, outline 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .article-mask:hover {
   background: rgba(0, 0, 255, 0.18);
   outline: 2px solid rgba(0, 0, 255, 0.35);
+}
+
+/* Disable text selection everywhere */
+* {
+  -webkit-user-select: none; /* Chrome, Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }

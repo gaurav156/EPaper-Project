@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 
 import ReaderHome from "./pages/ReaderHome";
 import ReaderEdition from "./pages/ReaderEdition";
@@ -9,6 +10,37 @@ import AdminRoute from "./components/AdminRoute";
 import "./App.css";
 
 function App() {
+
+  useEffect(() => {
+    const preventBrowserZoom = (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("wheel", preventBrowserZoom, {
+      passive: false
+    });
+
+    return () => {
+      document.removeEventListener("wheel", preventBrowserZoom);
+    };
+  }, []);
+
+  useEffect(() => {
+    const preventCopy = (e) => e.preventDefault();
+
+    document.addEventListener("copy", preventCopy);
+    document.addEventListener("cut", preventCopy);
+    document.addEventListener("contextmenu", preventCopy);
+
+    return () => {
+      document.removeEventListener("copy", preventCopy);
+      document.removeEventListener("cut", preventCopy);
+      document.removeEventListener("contextmenu", preventCopy);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
