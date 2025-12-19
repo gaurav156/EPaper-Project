@@ -40,47 +40,63 @@ function AdminHome() {
         <p>No editions found for this date.</p>
       )}
 
-      {editions.map(edition => (
-        <div
-          key={edition._id}
-          style={{
-            padding: 12,
-            borderBottom: "1px solid #ddd",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}
-        >
-          <div>
-            <strong>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: 16,
+          marginTop: 16
+        }}
+      >
+        {editions.map((edition) => (
+          <div
+            key={edition._id}
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              padding: 16,
+              background: "#fff",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)"
+            }}
+          >
+            <h3 style={{ margin: "0 0 6px" }}>
               {edition.newspaperName}
-              {edition.city && ` — ${edition.city}`}
-              {edition.editionType === "SPECIAL" && ` (${edition.category})`}
-            </strong>
-            <div style={{ fontSize: 12, color: "#666" }}>
-              Pages: {edition.pageCount}
+            </h3>
+
+            <div style={{ color: "#555", fontSize: 14 }}>
+              {edition.city && <div>📍 {edition.city}</div>}
+              {edition.editionType === "SPECIAL" && (
+                <div>⭐ {edition.category}</div>
+              )}
+              <div>📄 Pages: {edition.pageCount}</div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 12
+              }}
+            >
+              <button
+                onClick={() =>
+                  navigate(`/read/${edition.editionDate}/edition/${edition._id}/page/1`)
+                }
+              >
+                View
+              </button>
+
+              <button
+                onClick={() =>
+                  navigate(`/admin/edition/${edition._id}`)
+                }
+              >
+                Masks
+              </button>
             </div>
           </div>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() =>
-                navigate(`/read/${edition.editionDate}/edition/${edition._id}/page/1`)
-              }
-            >
-              View
-            </button>
-
-            <button
-              onClick={() =>
-                navigate(`/admin/edition/${edition._id}`)
-              }
-            >
-              Masks
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
