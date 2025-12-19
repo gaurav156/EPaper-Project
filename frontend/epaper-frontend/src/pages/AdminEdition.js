@@ -5,34 +5,40 @@ import API from "../services/api";
 function AdminEdition() {
   const { editionId } = useParams();
   const navigate = useNavigate();
+
   const [edition, setEdition] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get(`/editions/${editionId}`).then(res => {
-      setEdition(res.data);
-    });
+    API.get(`/editions/${editionId}`)
+      .then(res => setEdition(res.data))
+      .finally(() => setLoading(false));
   }, [editionId]);
 
-  if (!edition) return <p>Loading edition...</p>;
+  if (loading) return <p>Loading edition…</p>;
+  if (!edition) return <p>Edition not found</p>;
 
   return (
     <div style={{ padding: 20 }}>
+      {/* Breadcrumb */}
+      <div style={{ marginBottom: 12, fontSize: 14 }}>
+        <span
+          style={{ cursor: "pointer", color: "#007bff" }}
+          onClick={() => navigate("/admin")}
+        >
+          Dashboard
+        </span>
+        {" / "}
+        <strong>{edition.newspaperName}</strong>
+      </div>
+
       <h2>
         {edition.newspaperName}
         {edition.city && ` — ${edition.city}`}
       </h2>
 
-      <button
-        onClick={() => navigate("/admin")}
-        style={{ marginBottom: 12 }}
-      >
-        ← Back to dashboard
-      </button>
-
       <p>
-        Date: <strong>{edition.editionDate}</strong><br />
-        Pages: {edition.pageCount}<br />
-        Type: {edition.editionType}
+        Date: <strong>{edition.editionDate}</strong>
       </p>
 
       <h3>Pages</h3>
@@ -45,37 +51,20 @@ function AdminEdition() {
               width: 140,
               margin: 10,
               textAlign: "center",
-              border: "1px solid #ddd",
-              padding: 6
+              cursor: "pointer"
             }}
+            onClick={() =>
+              navigate(`/admin/edition/${editionId}/page/${i + 1}`)
+            }
           >
             <img
               src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
                 edition.s3Key
               )}&pageNumber=${i + 1}`}
               alt={`Page ${i + 1}`}
-              style={{ width: "100%", cursor: "pointer" }}
-              onClick={() =>
-                navigate(
-                  `/admin/edition/${edition._id}/page/${i + 1}`
-                )
-              }
+              style={{ width: "100%", border: "1px solid #ccc" }}
             />
-
-            <div style={{ marginTop: 6 }}>
-              Page {i + 1}
-            </div>
-
-            <button
-              style={{ marginTop: 6 }}
-              onClick={() =>
-                navigate(
-                  `/admin/edition/${edition._id}/page/${i + 1}`
-                )
-              }
-            >
-              Edit Masks
-            </button>
+            <div>Page {i + 1}</div>
           </div>
         ))}
       </div>
