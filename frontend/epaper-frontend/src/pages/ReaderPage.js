@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
+import Skeleton from "../components/Skeleton";
 
 function ReaderPage() {
   const { date, editionId, pageNumber } = useParams();
@@ -14,6 +15,8 @@ function ReaderPage() {
 
   const pinchStartDistance = useRef(null);
   const pinchStartZoom = useRef(1);
+
+  const [extracting, setExtracting] = useState(false);
 
   useEffect(() => {
     API.get(`/editions/${editionId}`).then((res) => {
@@ -107,45 +110,56 @@ function ReaderPage() {
           background: "#fafafa"
         }}
       >
-        {[...Array(edition.pageCount)].map((_, i) => {
-          const p = i + 1;
-          const active = Number(pageNumber) === p;
-
-          return (
-            <div
-              key={p}
-              onClick={() =>
-                navigate(`/read/${date}/edition/${editionId}/page/${p}`)
-              }
-              style={{
-                marginBottom: 10,
-                cursor: "pointer",
-                border: active
-                  ? "2px solid #1976d2"
-                  : "1px solid #ccc",
-                padding: 2
-              }}
-            >
-              <img
-                src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-                  edition.s3Key
-                )}&pageNumber=${p}`}
-                alt={`Page ${p}`}
-                style={{ width: "100%", display: "block" }}
-                draggable={false}
+        {!edition
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                height={160}
+                radius={4}
+                style={{ marginBottom: 10 }}
               />
+            ))
+          :
+          [...Array(edition.pageCount)].map((_, i) => {
+            const p = i + 1;
+            const active = Number(pageNumber) === p;
+
+            return (
               <div
+                key={p}
+                onClick={() =>
+                  navigate(`/read/${date}/edition/${editionId}/page/${p}`)
+                }
                 style={{
-                  textAlign: "center",
-                  fontSize: 12,
-                  marginTop: 4
+                  marginBottom: 10,
+                  cursor: "pointer",
+                  border: active
+                    ? "2px solid #1976d2"
+                    : "1px solid #ccc",
+                  padding: 2
                 }}
-              >
-                Page {p}
+              > 
+                <img
+                  src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                    edition.s3Key
+                  )}&pageNumber=${p}`}
+                  alt={`Page ${p}`}
+                  style={{ width: "100%", display: "block" }}
+                  draggable={false}
+                />
+                <div
+                  style={{
+                    textAlign: "center",
+                    fontSize: 12,
+                    marginTop: 4
+                  }}
+                >
+                  Page {p}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        }
       </aside>
 
       {/* RIGHT: MAIN PAGE VIEW */}
@@ -199,6 +213,15 @@ function ReaderPage() {
               transition: "transform 0.25s ease-out"
             }}
           >
+            {!pageImageUrl && (
+              <Skeleton
+                width={800}
+                height={1100}
+                radius={4}
+                style={{ margin: 20 }}
+              />
+            )}
+
             {pageImageUrl && (
               <img
                 src={pageImageUrl}
@@ -213,7 +236,7 @@ function ReaderPage() {
             )}
 
             {/* Mask Overlay */}
-            {masks.map((mask) => (
+            {pageImageUrl && masks.map((mask) => (
               <div
                 key={mask._id}
                 className="article-mask"
@@ -225,6 +248,8 @@ function ReaderPage() {
                   height: `${mask.height * 100}%`
                 }}
                 onClick={async () => {
+                  setExtracting(true);
+
                   const res = await API.post(
                     "/articles/extract",
                     {
@@ -238,6 +263,7 @@ function ReaderPage() {
                   );
 
                   setArticleUrl(URL.createObjectURL(res.data));
+                  setExtracting(false);
                 }}
               />
             ))}
@@ -309,6 +335,22 @@ function ReaderPage() {
             >
               ✕
             </button>
+
+            {extracting && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(255,255,255,0.6)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 20
+                }}
+              >
+                Extracting article…
+              </div>
+            )}
 
             <img src={articleUrl} alt="article" />
 

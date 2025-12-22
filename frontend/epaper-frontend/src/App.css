@@ -29,3 +29,19 @@ textarea {
 img {
   pointer-events: none;
  }
+
+ @keyframes pulse {
+  0% { opacity: 1 }
+  50% { opacity: 0.4 }
+  100% { opacity: 1 }
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

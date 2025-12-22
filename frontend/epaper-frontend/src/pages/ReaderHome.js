@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import Skeleton from "../components/Skeleton";
 
 function ReaderHome() {
   const navigate = useNavigate();
@@ -31,7 +32,27 @@ function ReaderHome() {
         />
       </div>
 
-      {loading && <p>Loading editions…</p>}
+      {loading && (
+        <div style={{ display: "flex", gap: 20 }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: 260,
+                border: "1px solid #ddd",
+                borderRadius: 10,
+                padding: 12,
+                background: "#fff"
+              }}
+            >
+              <Skeleton height={160} radius={8} />
+              <Skeleton height={18} style={{ marginTop: 12 }} />
+              <Skeleton height={14} width="60%" style={{ marginTop: 6 }} />
+              <Skeleton height={14} width="40%" style={{ marginTop: 10 }} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && editions.length === 0 && (
         <p>No editions available for this date.</p>

@@ -22,6 +22,8 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   const [draftRect, setDraftRect] = useState(null);
   const [savedMasks, setSavedMasks] = useState([]);
 
+  const [saving, setSaving] = useState(false);
+
   /* ================= FETCH MASKS ================= */
   useEffect(() => {
     API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
@@ -146,12 +148,16 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
     const mask = savedMasks.find(m => m._id === resizeRef.current.maskId);
     if (!mask) return;
 
+    setSaving(true);
+
     await API.put(`/masks/${mask._id}`, {
       x: mask.x,
       y: mask.y,
       width: mask.width,
       height: mask.height
     });
+
+    setSaving(false);
   };
 
   /* ================= DELETE ================= */
@@ -187,7 +193,10 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Toolbar */}
       <div style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
-        <button onClick={() => setDrawingEnabled(v => !v)}>
+        <button
+          disabled={!imageLoaded}
+          onClick={() => setDrawingEnabled(v => !v)}
+        >
           {drawingEnabled ? "🛑 Stop Drawing" : "✏️ Draw Mask"}
         </button>
       </div>
@@ -213,6 +222,22 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
             draggable={false}
             style={{ display: "block", userSelect: "none" }}
           />
+
+          {!imageLoaded && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "#f2f2f2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10
+              }}
+            >
+              Loading page…
+            </div>
+          )}
 
           {imageLoaded &&
             savedMasks.map(mask => (
@@ -270,6 +295,12 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
                 border: "2px dashed red"
               }}
             />
+          )}
+
+          {saving && (
+            <div style={{ position: "absolute", top: 8, right: 8 }}>
+              Saving…
+            </div>
           )}
         </div>
       </div>

@@ -10,6 +10,8 @@ function Upload() {
   const [editionType, setEditionType] = useState("REGULAR");
   const [category, setCategory] = useState("");
 
+  const [uploading, setUploading] = useState(false);
+
   const handleUpload = async () => {
     if (!file) {
       return alert("Select a file");
@@ -30,6 +32,7 @@ function Upload() {
     formData.append("editionType", editionType);
     formData.append("category", category);
 
+    setUploading(true);
     try {
       const res = await API.post("/upload", formData);
       alert("Upload successful");
@@ -41,6 +44,8 @@ function Upload() {
           ? "Unauthorized - please login again"
           : "Upload failed"
       );
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -64,7 +69,9 @@ function Upload() {
         placeholder="Category (Sports, Economy...)"
         onChange={e => setCategory(e.target.value)}
       />
-      <button onClick={handleUpload}>Upload</button>
+      <button disabled={uploading} onClick={handleUpload}>
+        {uploading ? "Uploading…" : "Upload"}
+      </button>
     </div>
   );
 }
