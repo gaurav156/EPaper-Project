@@ -60,10 +60,10 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
     const bounds = imageRef.current.getBoundingClientRect();
 
     const normalized = {
-      x: draftRect.x / bounds.width,
-      y: draftRect.y / bounds.height,
-      width: draftRect.width / bounds.width,
-      height: draftRect.height / bounds.height
+      x: Number((draftRect.x / bounds.width).toFixed(6)),
+      y: Number((draftRect.y / bounds.height).toFixed(6)),
+      width: Number((draftRect.width / bounds.width).toFixed(6)),
+      height: Number((draftRect.height / bounds.height).toFixed(6))
     };
 
     const res = await API.post("/masks", {

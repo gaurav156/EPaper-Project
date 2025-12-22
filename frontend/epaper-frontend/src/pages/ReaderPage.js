@@ -40,8 +40,10 @@ function ReaderPage() {
   }, [pageNumber]);
 
   useEffect(() => {
-    document.body.style.overflow = articleUrl ? "hidden" : "hidden";
-    return () => (document.body.style.overflow = "hidden");
+    document.body.style.overflow = articleUrl ? "hidden" : "auto";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [articleUrl]);
 
   const handleWheel = (e) => {
