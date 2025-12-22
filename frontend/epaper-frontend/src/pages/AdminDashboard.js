@@ -1,5 +1,4 @@
 import { Routes, Route, Link } from "react-router-dom";
-
 import Upload from "./Upload";
 import AdminEdition from "./AdminEdition";
 import AdminMask from "./AdminMask";
@@ -12,35 +11,54 @@ function AdminDashboard() {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      {/* Admin Header / Navigation */}
-      <header
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        overflow: "hidden"
+      }}
+    >
+      {/* Sidebar */}
+      <aside
         style={{
+          width: 56,
+          borderRight: "1px solid #ddd",
           display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: 12,
+          paddingBottom: 12,
           gap: 16,
-          marginBottom: 20,
-          borderBottom: "1px solid #ddd",
-          paddingBottom: 10
+          background: "#fff"
         }}
       >
-        <Link to="/admin">Dashboard</Link>
-        <Link to="/admin/upload">Upload</Link>
-        <button onClick={logout}>Logout</button>
-      </header>
+        <Link title="Dashboard" to="/admin">📊</Link>
+        <Link title="Upload Edition" to="/admin/upload">⬆️</Link>
 
-      {/* Admin Internal Routes */}
-      <Routes>
-        {/* Default admin page */}
-        <Route path="/" element={<AdminHome />} />
+        <div style={{ flex: 1 }} />
 
-        <Route path="upload" element={<Upload />} />
+        <button title="Logout" onClick={logout}>🚪</button>
+      </aside>
 
-        <Route path="edition/:editionId" element={<AdminEdition />} />
-        <Route
-          path="edition/:editionId/page/:pageNumber"
-          element={<AdminMask />}
-        />
-      </Routes>
+      {/* Content */}
+      <main
+        style={{
+          flex: 1,
+          height: "100%",
+          overflow: "hidden",
+          marginLeft: 12
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<AdminHome />} />
+          <Route path="upload" element={<Upload />} />
+          <Route path="edition/:editionId" element={<AdminEdition />} />
+          <Route
+            path="edition/:editionId/page/:pageNumber"
+            element={<AdminMask />}
+          />
+        </Routes>
+      </main>
     </div>
   );
 }

@@ -6,54 +6,44 @@ import MaskEditor from "./MaskEditor";
 function AdminMask() {
   const { editionId, pageNumber } = useParams();
   const navigate = useNavigate();
-
   const [edition, setEdition] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get(`/editions/${editionId}`)
-      .then(res => setEdition(res.data))
-      .finally(() => setLoading(false));
+    API.get(`/editions/${editionId}`).then(res => setEdition(res.data));
   }, [editionId]);
 
-  if (loading) return <p>Loading…</p>;
-  if (!edition) return <p>Edition not found</p>;
+  if (!edition) return <p>Loading…</p>;
 
   return (
-    <div style={{ padding: 20 }}>
-      {/* Breadcrumb */}
-      <div style={{ marginBottom: 12, fontSize: 14 }}>
-        <span
-          style={{ cursor: "pointer", color: "#007bff" }}
-          onClick={() => navigate("/admin")}
-        >
-          Dashboard
-        </span>
-        {" / "}
-        <span
-          style={{ cursor: "pointer", color: "#007bff" }}
-          onClick={() => navigate(`/admin/edition/${editionId}`)}
-        >
-          {edition.newspaperName}
-        </span>
-        {" / "}
-        <strong>Page {pageNumber}</strong>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }}
+    >
+      {/* Header / Breadcrumb */}
+      <div style={{ padding: 16, borderBottom: "1px solid #ddd" }}>
+        <div style={{ fontSize: 14 }}>
+          <span onClick={() => navigate("/admin")} style={{ cursor: "pointer", color: "#007bff" }}>
+            Dashboard
+          </span>
+          {" / "}
+          <span
+            onClick={() => navigate(`/admin/edition/${editionId}`)}
+            style={{ cursor: "pointer", color: "#007bff" }}
+          >
+            {edition.newspaperName}
+          </span>
+          {" / "}
+          <strong>Page {pageNumber}</strong>
+        </div>
+        <h2 style={{ margin: "8px 0" }}>Mask Editor</h2>
       </div>
 
-      <h2>Mask Editor — Page {pageNumber}</h2>
-
-      <p style={{ color: "#666", fontSize: 13 }}>
-        Scroll to view full page • Drag to draw article masks
-      </p>
-
-      <div 
-        style={{ 
-          height: "calc(100vh - 120px)",
-          overflowY: "auto",
-          border: "1px solid #ddd",
-          padding: 12 
-        }}
-      >
+      {/* Mask Editor fills rest of screen */}
+      <div style={{ flex: 1, overflow: "hidden" }}>
         <MaskEditor
           editionId={editionId}
           pageNumber={Number(pageNumber)}
