@@ -52,7 +52,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
 });
 
 // Update mask (resize)
-router.patch("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireAdmin, async (req, res) => {
   const { x, y, width, height } = req.body;
 
   const mask = await ArticleMask.findByIdAndUpdate(
@@ -60,6 +60,8 @@ router.patch("/:id", requireAdmin, async (req, res) => {
     { x, y, width, height },
     { new: true }
   );
+
+  if (!mask) return res.status(404).json({ message: "Mask not found" });
 
   res.json(mask);
 });
