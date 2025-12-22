@@ -1,20 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import API from "../services/api";
 
-function MaskEditor({ pageImageUrl, pageNumber, editionId, s3Key }) {
+const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
+
+function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   const imageRef = useRef(null);
-  const scrollRef = useRef(null);
+  const resizeRef = useRef(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [drawingEnabled, setDrawingEnabled] = useState(false);
+
   const [start, setStart] = useState(null);
-  const [rect, setRect] = useState(null);
+  const [draftRect, setDraftRect] = useState(null);
   const [savedMasks, setSavedMasks] = useState([]);
 
-  const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
+  /* ================= FETCH MASKS ================= */
+  useEffect(() => {
+    API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
+      .then(res => setSavedMasks(res.data));
+  }, [editionId, pageNumber]);
 
-  /* ===================== DRAW HANDLERS ===================== */
-
+  /* ================= DRAW NEW MASK ================= */
   const handleMouseDown = (e) => {
     if (!drawingEnabled || !imageLoaded) return;
 
@@ -26,92 +32,113 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId, s3Key }) {
   };
 
   const handleMouseMove = (e) => {
-    if (!drawingEnabled || !start) return;
+    if (!start || !imageRef.current) return;
 
     const bounds = imageRef.current.getBoundingClientRect();
-    const cx = clamp(e.clientX - bounds.left, 0, bounds.width);
-    const cy = clamp(e.clientY - bounds.top, 0, bounds.height);
+    const x = clamp(e.clientX - bounds.left, 0, bounds.width);
+    const y = clamp(e.clientY - bounds.top, 0, bounds.height);
 
-    setRect({
-      x: Math.min(start.x, cx),
-      y: Math.min(start.y, cy),
-      width: Math.abs(cx - start.x),
-      height: Math.abs(cy - start.y)
+    setDraftRect({
+      x: Math.min(start.x, x),
+      y: Math.min(start.y, y),
+      width: Math.abs(x - start.x),
+      height: Math.abs(y - start.y)
     });
   };
 
   const handleMouseUp = async () => {
-    if (!drawingEnabled || !rect) return;
+    if (!draftRect || !imageRef.current) return;
 
     const bounds = imageRef.current.getBoundingClientRect();
 
-    const payload = {
-      editionId,
-      pageNumber,
-      s3Key,
-      x: rect.x / bounds.width,
-      y: rect.y / bounds.height,
-      width: rect.width / bounds.width,
-      height: rect.height / bounds.height
+    const normalized = {
+      x: draftRect.x / bounds.width,
+      y: draftRect.y / bounds.height,
+      width: draftRect.width / bounds.width,
+      height: draftRect.height / bounds.height
     };
 
-    const res = await API.post("/masks", payload);
-    setSavedMasks(prev => [...prev, res.data]);
+    const res = await API.post("/masks", {
+      editionId,
+      pageNumber,
+      ...normalized
+    });
 
+    setSavedMasks(prev => [...prev, res.data]);
     setStart(null);
-    setRect(null);
+    setDraftRect(null);
   };
 
-  /* ===================== LOAD MASKS ===================== */
+  /* ================= RESIZE ================= */
+  const startResize = (e, mask) => {
+    e.stopPropagation();
+    resizeRef.current = mask;
+  };
 
-  useEffect(() => {
-    API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
-      .then(res => setSavedMasks(res.data));
-  }, [editionId, pageNumber]);
+  const handleResizeMove = (e) => {
+    if (!resizeRef.current || !imageRef.current) return;
 
-  /* ===================== RENDER ===================== */
+    const bounds = imageRef.current.getBoundingClientRect();
+    const mx = clamp((e.clientX - bounds.left) / bounds.width, 0, 1);
+    const my = clamp((e.clientY - bounds.top) / bounds.height, 0, 1);
 
+    setSavedMasks(prev =>
+      prev.map(m =>
+        m._id === resizeRef.current._id
+          ? { ...m, width: mx - m.x, height: my - m.y }
+          : m
+      )
+    );
+  };
+
+  const stopResize = async () => {
+    if (!resizeRef.current) return;
+
+    const m = savedMasks.find(x => x._id === resizeRef.current._id);
+    await API.patch(`/masks/${m._id}`, m);
+
+    resizeRef.current = null;
+  };
+
+  /* ================= DELETE ================= */
+  const deleteMask = async (e, id) => {
+    e.stopPropagation();
+    await API.delete(`/masks/${id}`);
+    setSavedMasks(prev => prev.filter(m => m._id !== id));
+  };
+
+  /* ================= RENDER ================= */
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Sticky toolbar */}
-      <div
-        style={{
-          padding: 12,
-          borderBottom: "1px solid #ddd",
-          background: "#fff",
-          position: "sticky",
-          top: 0,
-          zIndex: 5
-        }}
-      >
-        <button onClick={() => setDrawingEnabled(d => !d)}>
-          {drawingEnabled ? "Stop Mask Creation" : "Start Mask Creation"}
+      {/* Toolbar */}
+      <div style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
+        <button onClick={() => setDrawingEnabled(v => !v)}>
+          {drawingEnabled ? "🛑 Stop Drawing" : "✏️ Draw Mask"}
         </button>
       </div>
 
-      {/* Scrollable image area */}
+      {/* Canvas */}
       <div
-        ref={scrollRef}
-        style={{
-          flex: 1,
-          overflow: "auto",
-          background: "#f5f5f5"
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        style={{ flex: 1, overflow: "auto", cursor: drawingEnabled ? "crosshair" : "default" }}
+        onMouseMove={handleResizeMove}
+        onMouseUp={stopResize}
       >
-        <div style={{ position: "relative", display: "inline-block" }}>
+        <div
+          style={{ position: "relative", display: "inline-block" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
           <img
             ref={imageRef}
             src={pageImageUrl}
             alt="page"
-            draggable={false}
             onLoad={() => setImageLoaded(true)}
+            draggable={false}
             style={{ display: "block", userSelect: "none" }}
           />
 
-          {/* Saved masks */}
+          {/* Masks */}
           {imageLoaded &&
             savedMasks.map(mask => (
               <div
@@ -127,40 +154,54 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId, s3Key }) {
                 }}
               >
                 <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await API.delete(`/masks/${mask._id}`);
-                    setSavedMasks(prev => prev.filter(m => m._id !== mask._id));
-                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => deleteMask(e, mask._id)}
                   style={{
                     position: "absolute",
-                    top: -10,
-                    right: -10,
-                    width: 20,
-                    height: 20,
+                    top: -12,
+                    right: -12,
+                    width: 24,
+                    height: 24,
                     borderRadius: "50%",
-                    background: "red",
+                    background: "#e53935",
                     color: "#fff",
                     border: "none",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: "bold",
+                    lineHeight: "24px",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.25)"
                   }}
+                  title="Delete mask"
                 >
                   ×
                 </button>
+
+                <div
+                  onMouseDown={(e) => startResize(e, mask)}
+                  style={{
+                    position: "absolute",
+                    right: -6,
+                    bottom: -6,
+                    width: 12,
+                    height: 12,
+                    background: "green",
+                    cursor: "nwse-resize"
+                  }}
+                />
               </div>
             ))}
 
-          {/* Active drawing rect */}
-          {rect && drawingEnabled && (
+          {/* Draft */}
+          {imageLoaded && draftRect && (
             <div
               style={{
                 position: "absolute",
-                left: rect.x,
-                top: rect.y,
-                width: rect.width,
-                height: rect.height,
-                border: "2px solid red",
-                background: "rgba(255,0,0,0.2)"
+                left: draftRect.x,
+                top: draftRect.y,
+                width: draftRect.width,
+                height: draftRect.height,
+                border: "2px dashed red"
               }}
             />
           )}

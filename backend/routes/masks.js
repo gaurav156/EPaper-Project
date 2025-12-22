@@ -51,4 +51,17 @@ router.delete("/:id", requireAdmin, async (req, res) => {
   res.json({ message: "Mask deleted" });
 });
 
+// Update mask (resize)
+router.patch("/:id", requireAdmin, async (req, res) => {
+  const { x, y, width, height } = req.body;
+
+  const mask = await ArticleMask.findByIdAndUpdate(
+    req.params.id,
+    { x, y, width, height },
+    { new: true }
+  );
+
+  res.json(mask);
+});
+
 module.exports = router;
