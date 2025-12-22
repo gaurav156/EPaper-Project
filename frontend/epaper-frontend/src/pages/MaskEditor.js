@@ -5,7 +5,15 @@ const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
 
 function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   const imageRef = useRef(null);
-  const resizeRef = useRef(null);
+
+  const resizeRef = useRef({
+    active: false,
+    maskId: null,
+    corner: null,
+    startX: 0,
+    startY: 0,
+    startRect: null
+  });
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [drawingEnabled, setDrawingEnabled] = useState(false);
@@ -22,7 +30,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
 
   /* ================= DRAW NEW MASK ================= */
   const handleMouseDown = (e) => {
-    if (!drawingEnabled || !imageLoaded) return;
+    if (!drawingEnabled || !imageLoaded || resizeRef.current.active) return;
 
     const bounds = imageRef.current.getBoundingClientRect();
     setStart({
@@ -32,7 +40,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   };
 
   const handleMouseMove = (e) => {
-    if (!start || !imageRef.current) return;
+    if (!start || !imageRef.current || resizeRef.current.active) return;
 
     const bounds = imageRef.current.getBoundingClientRect();
     const x = clamp(e.clientX - bounds.left, 0, bounds.width);
@@ -47,7 +55,7 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   };
 
   const handleMouseUp = async () => {
-    if (!draftRect || !imageRef.current) return;
+    if (!draftRect || !imageRef.current || resizeRef.current.active) return;
 
     const bounds = imageRef.current.getBoundingClientRect();
 
@@ -70,34 +78,80 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   };
 
   /* ================= RESIZE ================= */
-  const startResize = (e, mask) => {
+  const startResize = (e, mask, corner) => {
     e.stopPropagation();
-    resizeRef.current = mask;
+
+    const bounds = imageRef.current.getBoundingClientRect();
+
+    resizeRef.current = {
+      active: true,
+      maskId: mask._id,
+      corner,
+      startX: e.clientX,
+      startY: e.clientY,
+      startRect: {
+        x: mask.x * bounds.width,
+        y: mask.y * bounds.height,
+        width: mask.width * bounds.width,
+        height: mask.height * bounds.height
+      }
+    };
   };
 
   const handleResizeMove = (e) => {
-    if (!resizeRef.current || !imageRef.current) return;
+    if (!resizeRef.current.active) return;
 
+    const { corner, startX, startY, startRect, maskId } = resizeRef.current;
     const bounds = imageRef.current.getBoundingClientRect();
-    const mx = clamp((e.clientX - bounds.left) / bounds.width, 0, 1);
-    const my = clamp((e.clientY - bounds.top) / bounds.height, 0, 1);
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    let { x, y, width, height } = startRect;
+
+    if (corner.includes("r")) width += dx;
+    if (corner.includes("l")) {
+      width -= dx;
+      x += dx;
+    }
+    if (corner.includes("b")) height += dy;
+    if (corner.includes("t")) {
+      height -= dy;
+      y += dy;
+    }
+
+    width = Math.max(10, width);
+    height = Math.max(10, height);
 
     setSavedMasks(prev =>
       prev.map(m =>
-        m._id === resizeRef.current._id
-          ? { ...m, width: mx - m.x, height: my - m.y }
+        m._id === maskId
+          ? {
+              ...m,
+              x: x / bounds.width,
+              y: y / bounds.height,
+              width: width / bounds.width,
+              height: height / bounds.height
+            }
           : m
       )
     );
   };
 
-  const stopResize = async () => {
-    if (!resizeRef.current) return;
+  const endResize = async () => {
+    if (!resizeRef.current.active) return;
 
-    const m = savedMasks.find(x => x._id === resizeRef.current._id);
-    await API.patch(`/masks/${m._id}`, m);
+    resizeRef.current.active = false;
 
-    resizeRef.current = null;
+    const mask = savedMasks.find(m => m._id === resizeRef.current.maskId);
+    if (!mask) return;
+
+    await API.put(`/masks/${mask._id}`, {
+      x: mask.x,
+      y: mask.y,
+      width: mask.width,
+      height: mask.height
+    });
   };
 
   /* ================= DELETE ================= */
@@ -106,6 +160,27 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
     await API.delete(`/masks/${id}`);
     setSavedMasks(prev => prev.filter(m => m._id !== id));
   };
+
+  const ResizeHandle = ({ corner, mask }) => (
+    <div
+      onMouseDown={(e) => startResize(e, mask, corner)}
+      style={{
+        position: "absolute",
+        width: 10,
+        height: 10,
+        background: "#fff",
+        border: "2px solid #007bff",
+        cursor:
+          corner === "tl" || corner === "br"
+            ? "nwse-resize"
+            : "nesw-resize",
+        ...(corner === "tl" && { top: -5, left: -5 }),
+        ...(corner === "tr" && { top: -5, right: -5 }),
+        ...(corner === "bl" && { bottom: -5, left: -5 }),
+        ...(corner === "br" && { bottom: -5, right: -5 })
+      }}
+    />
+  );
 
   /* ================= RENDER ================= */
   return (
@@ -121,7 +196,8 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
       <div
         style={{ flex: 1, overflow: "auto", cursor: drawingEnabled ? "crosshair" : "default" }}
         onMouseMove={handleResizeMove}
-        onMouseUp={stopResize}
+        onMouseUp={endResize}
+        onMouseLeave={endResize}
       >
         <div
           style={{ position: "relative", display: "inline-block" }}
@@ -138,7 +214,6 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
             style={{ display: "block", userSelect: "none" }}
           />
 
-          {/* Masks */}
           {imageLoaded &&
             savedMasks.map(mask => (
               <div
@@ -153,6 +228,11 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
                   background: "rgba(0,255,0,0.15)"
                 }}
               >
+                <ResizeHandle corner="tl" mask={mask} />
+                <ResizeHandle corner="tr" mask={mask} />
+                <ResizeHandle corner="bl" mask={mask} />
+                <ResizeHandle corner="br" mask={mask} />
+
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => deleteMask(e, mask._id)}
@@ -176,23 +256,9 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
                 >
                   ×
                 </button>
-
-                <div
-                  onMouseDown={(e) => startResize(e, mask)}
-                  style={{
-                    position: "absolute",
-                    right: -6,
-                    bottom: -6,
-                    width: 12,
-                    height: 12,
-                    background: "green",
-                    cursor: "nwse-resize"
-                  }}
-                />
               </div>
             ))}
 
-          {/* Draft */}
           {imageLoaded && draftRect && (
             <div
               style={{
