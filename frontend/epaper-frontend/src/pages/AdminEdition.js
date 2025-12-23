@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 function AdminEdition() {
   const { editionId } = useParams();
@@ -57,12 +58,16 @@ function AdminEdition() {
               navigate(`/admin/edition/${editionId}/page/${i + 1}`)
             }
           >
-            <img
-              src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+            <ProgressiveImage
+              lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
                 edition.s3Key
-              )}&pageNumber=${i + 1}`}
+              )}&pageNumber=${i + 1}&quality=low`}
+              highSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                edition.s3Key
+              )}&pageNumber=${i + 1}&quality=high`}
               alt={`Page ${i + 1}`}
-              style={{ width: "100%", border: "1px solid #ccc" }}
+              style={{ width: "100%", minHeight: 180 }}
+              imgStyle={{ objectFit: "cover" }}
             />
             <div>Page {i + 1}</div>
           </div>

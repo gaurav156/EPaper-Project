@@ -8,6 +8,9 @@ const router = express.Router();
 
 router.get("/image", async (req, res) => {
   const { s3Key, pageNumber } = req.query;
+  const quality = req.query.quality || "high";
+  const dpi = quality === "low" ? 72 : 200;
+  const scale = quality === "low" ? 0.4 : 1;
 
   if (!s3Key || !pageNumber) {
     return res.status(400).json({ error: "Missing s3Key or pageNumber" });

@@ -48,7 +48,7 @@ function AdminMask() {
           editionId={editionId}
           pageNumber={Number(pageNumber)}
           s3Key={edition.s3Key}
-          pageImageUrl={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+          pageImageBaseUrl={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
             edition.s3Key
           )}&pageNumber=${pageNumber}`}
         />

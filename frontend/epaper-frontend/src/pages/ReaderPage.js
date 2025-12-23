@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import Skeleton from "../components/Skeleton";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 function ReaderPage() {
   const { date, editionId, pageNumber } = useParams();
@@ -9,7 +10,9 @@ function ReaderPage() {
 
   const [edition, setEdition] = useState(null);
   const [masks, setMasks] = useState([]);
-  const [pageImageUrl, setPageImageUrl] = useState(null);
+
+  const [pageReady, setPageReady] = useState(false);
+
   const [articleUrl, setArticleUrl] = useState(null);
   const [zoom, setZoom] = useState(1);
 
@@ -30,12 +33,6 @@ function ReaderPage() {
     API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
       .then((res) => setMasks(res.data));
 
-    API.get(
-      `/pages/image?s3Key=${edition.s3Key}&pageNumber=${pageNumber}`,
-      { responseType: "blob" }
-    ).then((res) => {
-      setPageImageUrl(URL.createObjectURL(res.data));
-    });
   }, [edition, editionId, pageNumber]);
 
   useEffect(() => {
@@ -48,6 +45,10 @@ function ReaderPage() {
       document.body.style.overflow = "auto";
     };
   }, [articleUrl]);
+
+  useEffect(() => {
+    setPageReady(false);
+  }, [pageNumber]);
 
   const handleWheel = (e) => {
     if (!e.ctrlKey) return;
@@ -88,7 +89,14 @@ function ReaderPage() {
     pinchStartDistance.current = null;
   };
 
-  if (!edition) return <p>Loading...</p>;
+  if (!edition) {
+    return (
+      <div style={{ padding: 20 }}>
+        <Skeleton height={24} width={220} />
+        <Skeleton height={600} style={{ marginTop: 20 }} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -139,13 +147,15 @@ function ReaderPage() {
                   padding: 2
                 }}
               > 
-                <img
-                  src={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                <ProgressiveImage
+                  lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
                     edition.s3Key
-                  )}&pageNumber=${p}`}
+                  )}&pageNumber=${p}&quality=low`}
+                  highSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                    edition.s3Key
+                  )}&pageNumber=${p}&quality=high`}
                   alt={`Page ${p}`}
-                  style={{ width: "100%", display: "block" }}
-                  draggable={false}
+                  imgStyle={{ width: "100%", minHeight: 180 }}
                 />
                 <div
                   style={{
@@ -213,30 +223,33 @@ function ReaderPage() {
               transition: "transform 0.25s ease-out"
             }}
           >
-            {!pageImageUrl && (
+            {!pageReady && (
               <Skeleton
-                width={800}
+                width="-webkit-fill-available"
                 height={1100}
-                radius={4}
-                style={{ margin: 20 }}
+                shimmer
+                radius={6}
+                style={{ margin: 20}}
               />
             )}
 
-            {pageImageUrl && (
-              <img
-                src={pageImageUrl}
-                alt="page"
-                draggable={false}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  pointerEvents: "none"
-                }}
-              />
-            )}
+            <ProgressiveImage
+              lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                edition.s3Key
+              )}&pageNumber=${pageNumber}&quality=low`}
+              highSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+                edition.s3Key
+              )}&pageNumber=${pageNumber}&quality=high`}
+              alt="page"
+              imgStyle={{
+                pointerEvents: "none",
+                userSelect: "none"
+              }}
+              onLoad={() => setPageReady(true)}
+            />
 
             {/* Mask Overlay */}
-            {pageImageUrl && masks.map((mask) => (
+            {pageReady && masks.map((mask) => (
               <div
                 key={mask._id}
                 className="article-mask"

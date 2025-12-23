@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import API from "../services/api";
+import ProgressiveImage from "../components/ProgressiveImage";
 
 const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
 
-function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
-  const imageRef = useRef(null);
+function MaskEditor({ pageImageBaseUrl, pageNumber, editionId }) {
+  const canvasRef = useRef(null);
 
   const resizeRef = useRef({
     active: false,
@@ -33,8 +34,10 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   /* ================= DRAW NEW MASK ================= */
   const handleMouseDown = (e) => {
     if (!drawingEnabled || !imageLoaded || resizeRef.current.active) return;
+    if (!canvasRef.current) return;
 
-    const bounds = imageRef.current.getBoundingClientRect();
+    const bounds = canvasRef.current.getBoundingClientRect();
+
     setStart({
       x: e.clientX - bounds.left,
       y: e.clientY - bounds.top
@@ -42,9 +45,10 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   };
 
   const handleMouseMove = (e) => {
-    if (!start || !imageRef.current || resizeRef.current.active) return;
+    if (!start || !canvasRef.current || resizeRef.current.active) return;
+    if (!canvasRef.current) return;
 
-    const bounds = imageRef.current.getBoundingClientRect();
+    const bounds = canvasRef.current.getBoundingClientRect();
     const x = clamp(e.clientX - bounds.left, 0, bounds.width);
     const y = clamp(e.clientY - bounds.top, 0, bounds.height);
 
@@ -57,9 +61,10 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   };
 
   const handleMouseUp = async () => {
-    if (!draftRect || !imageRef.current || resizeRef.current.active) return;
+    if (!draftRect || !canvasRef.current || resizeRef.current.active) return;
+    if (!canvasRef.current) return;
 
-    const bounds = imageRef.current.getBoundingClientRect();
+    const bounds = canvasRef.current.getBoundingClientRect();
 
     const normalized = {
       x: Number((draftRect.x / bounds.width).toFixed(6)),
@@ -82,8 +87,9 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
   /* ================= RESIZE ================= */
   const startResize = (e, mask, corner) => {
     e.stopPropagation();
+    if (!canvasRef.current) return;
 
-    const bounds = imageRef.current.getBoundingClientRect();
+    const bounds = canvasRef.current.getBoundingClientRect();
 
     resizeRef.current = {
       active: true,
@@ -104,7 +110,9 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
     if (!resizeRef.current.active) return;
 
     const { corner, startX, startY, startRect, maskId } = resizeRef.current;
-    const bounds = imageRef.current.getBoundingClientRect();
+    if (!canvasRef.current) return;
+    
+    const bounds = canvasRef.current.getBoundingClientRect();
 
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
@@ -209,35 +217,18 @@ function MaskEditor({ pageImageUrl, pageNumber, editionId }) {
         onMouseLeave={endResize}
       >
         <div
+          ref={canvasRef}
           style={{ position: "relative", display: "inline-block" }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         >
-          <img
-            ref={imageRef}
-            src={pageImageUrl}
+          <ProgressiveImage
+            lowSrc={`${pageImageBaseUrl}&quality=low`}
+            highSrc={`${pageImageBaseUrl}&quality=high`}
             alt="page"
             onLoad={() => setImageLoaded(true)}
-            draggable={false}
-            style={{ display: "block", userSelect: "none" }}
           />
-
-          {!imageLoaded && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "#f2f2f2",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 10
-              }}
-            >
-              Loading page…
-            </div>
-          )}
 
           {imageLoaded &&
             savedMasks.map(mask => (
