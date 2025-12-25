@@ -7,20 +7,15 @@ const downloadPdfFromS3 = require("../utils/s3Download");
 const router = express.Router();
 
 router.get("/image", async (req, res) => {
-  const { s3Key, pageNumber } = req.query;
-  const quality = req.query.quality || "high";
-  const dpi = quality === "low" ? 72 : 200;
-  const scale = quality === "low" ? 0.4 : 1;
+  const { s3Key, pageNumber, quality = "high" } = req.query;
 
   if (!s3Key || !pageNumber) {
     return res.status(400).json({ error: "Missing s3Key or pageNumber" });
   }
 
   try {
-    // Download PDF from S3
     const localPdfPath = await downloadPdfFromS3(s3Key);
 
-    // Convert page to image
     const editionTempDir = path.join(
       __dirname,
       "../temp",
@@ -34,12 +29,15 @@ router.get("/image", async (req, res) => {
     const imagePath = await convertPageToImage(
       localPdfPath,
       pageNumber,
-      editionTempDir
+      editionTempDir,
+      { quality }
     );
 
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader(
+      "Cache-Control",
+      "public, max-age=31536000, immutable"
+    );
 
-    // Send image
     res.sendFile(imagePath);
   } catch (err) {
     console.error("Page image error:", err);

@@ -1,12 +1,21 @@
 const sharp = require("sharp");
 const path = require("path");
+const fs = require("fs");
 
 async function cropArticle({
   pageImagePath,
   mask,
   footerText,
-  outputDir
+  outputDir,
+  cacheKey
 }) {
+  const outputPath = path.join(outputDir, `article-${cacheKey}.png`);
+
+  // Cache hit
+  if (fs.existsSync(outputPath)) {
+    return outputPath;
+  }
+
   const image = sharp(pageImagePath);
   const metadata = await image.metadata();
 
@@ -24,41 +33,36 @@ async function cropArticle({
   const leftPadding = Math.floor((finalWidth - cropArea.width) / 2);
   const rightPadding = finalWidth - cropArea.width - leftPadding;
 
-  const outputPath = path.join(
-    outputDir,
-    `article-${Date.now()}.png`
-  );
-
   // Crop + extend for footer
   await image
-  .extract(cropArea)
-  .extend({
-    top: 0,
+    .extract(cropArea)
+    .extend({
+      top: 0,
     bottom: 50,
     left: leftPadding,
     right: rightPadding,
-    background: "#ffffff"
-  })
-  .composite([
-    {
+      background: "#ffffff"
+    })
+    .composite([
+      {
       input: Buffer.from(
         `<svg width="${finalWidth}" height="50">
-          <text
-            x="50%"
-            y="30"
-            text-anchor="middle"
-            font-size="18"
-            fill="#000"
+            <text
+              x="50%"
+              y="30"
+              text-anchor="middle"
+              font-size="18"
+              fill="#000"
             font-family="Arial, Helvetica, sans-serif">
-            ${footerText}
-          </text>
+              ${footerText}
+            </text>
         </svg>`
       ),
-      top: cropArea.height,
-      left: 0
-    }
-  ])
-  .toFile(outputPath);
+        top: cropArea.height,
+        left: 0
+      }
+    ])
+    .toFile(outputPath);
 
   return outputPath;
 }

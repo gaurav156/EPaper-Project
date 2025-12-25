@@ -9,47 +9,49 @@ function ProgressiveImage({
   style,
   imgStyle
 }) {
-  const [loaded, setLoaded] = useState(false);
+  const [highLoaded, setHighLoaded] = useState(false);
 
   useEffect(() => {
-    setLoaded(false);
+    setHighLoaded(false);
   }, [highSrc]);
 
   return (
-    <div style={{ position: "relative", ...style }}>
-      {!loaded && (
+    <div style={{ position: "relative", overflow: "hidden", ...style }}>
+      {!highLoaded && (
         <Skeleton
-          width="100%"
-          height="100%"
           shimmer
-          style={{ position: "absolute", inset: 0 }}
+          style={{ position: "absolute", inset: 0, zIndex: 1 }}
         />
       )}
 
+      {/* Low-res */}
       <img
         src={lowSrc}
         alt={alt}
+        draggable={false}
         style={{
           width: "100%",
-          filter: loaded ? "none" : "blur(10px)",
+          filter: highLoaded ? "none" : "blur(12px)",
           transition: "filter 0.3s ease",
           ...imgStyle
         }}
       />
 
+      {/* High-res */}
       <img
         src={highSrc}
         alt={alt}
+        draggable={false}
         style={{
           width: "100%",
           position: "absolute",
           inset: 0,
-          opacity: loaded ? 1 : 0,
+          opacity: highLoaded ? 1 : 0,
           transition: "opacity 0.3s ease",
           ...imgStyle
         }}
         onLoad={() => {
-          setLoaded(true);
+          setHighLoaded(true);
           onLoad?.();
         }}
       />

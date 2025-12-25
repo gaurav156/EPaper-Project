@@ -1,19 +1,45 @@
 const { exec } = require("child_process");
 const path = require("path");
+const fs = require("fs");
 
-const convertPageToImage = (pdfPath, pageNumber, outputDir) => {
+function convertPageToImage(
+  pdfPath,
+  pageNumber,
+  outputDir,
+  { quality = "high" } = {}
+) {
   return new Promise((resolve, reject) => {
-    const outputPrefix = path.join(outputDir, `page-${pageNumber}`);
-    const cmd = `pdftoppm -png -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputPrefix}"`;
+    const dpi = quality === "low" ? 72 : 200;
+
+    const outputPrefix = path.join(
+      outputDir,
+      `page-${pageNumber}-${quality}`
+    );
+
+    // Run pdftoppm
+    const cmd = `pdftoppm -png -r ${dpi} -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputPrefix}"`;
 
     exec(cmd, (err) => {
       if (err) return reject(err);
 
-      // pdftoppm always appends the page number to the output prefix
-      const imagePath = `${outputPrefix}-${pageNumber}.png`;
-      resolve(imagePath);
+      // 🔑 Find the actual generated file
+      const files = fs
+        .readdirSync(outputDir)
+        .filter(
+          (f) =>
+            f.startsWith(`page-${pageNumber}-${quality}`) &&
+            f.endsWith(".png")
+        );
+
+      if (!files.length) {
+        return reject(
+          new Error("pdftoppm did not generate an image")
+        );
+      }
+
+      resolve(path.join(outputDir, files[0]));
     });
   });
-};
+}
 
 module.exports = convertPageToImage;
