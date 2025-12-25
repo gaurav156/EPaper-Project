@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
-import ProgressiveImage from "../components/ProgressiveImage";
+import LazyThumbnail from "../components/LazyThumbnail";
 
 function AdminEdition() {
   const { editionId } = useParams();
@@ -58,7 +58,7 @@ function AdminEdition() {
               navigate(`/admin/edition/${editionId}/page/${i + 1}`)
             }
           >
-            <ProgressiveImage
+            <LazyThumbnail
               lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
                 edition.s3Key
               )}&pageNumber=${i + 1}&quality=low`}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ProgressiveImage from "./ProgressiveImage";
 
-function LazyThumbnail({ lowSrc, highSrc, alt }) {
+function LazyThumbnail({ lowSrc, highSrc, alt, style, imgStyle }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -21,13 +21,13 @@ function LazyThumbnail({ lowSrc, highSrc, alt }) {
   }, []);
 
   return (
-    <div ref={ref} style={{ minHeight: 180 }}>
+    <div ref={ref} style={{ minHeight: 180, ...style }}>
       {visible && (
         <ProgressiveImage
           lowSrc={lowSrc}
           highSrc={highSrc}
           alt={alt}
-          imgStyle={{ width: "100%" }}
+          imgStyle={{ width: "100%", ...imgStyle }}
         />
       )}
     </div>
