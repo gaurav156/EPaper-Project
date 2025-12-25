@@ -16,13 +16,29 @@ function convertPageToImage(
       `page-${pageNumber}-${quality}`
     );
 
-    // Run pdftoppm
+    // pdftoppm output format:
+    // <prefix>-<pageNumber>.png
+    // const outputImage = `${outputPrefix}-${pageNumber}.png`;
+
+    // // Cache hit (quality-aware)
+    const files = fs
+      .readdirSync(outputDir)
+      .filter(
+        (f) =>
+          f.startsWith(`page-${pageNumber}-${quality}`) &&
+          f.endsWith(".png")
+      );
+
+    if (files.length) {
+      return resolve(path.join(outputDir, files[0]));
+    }
+
     const cmd = `pdftoppm -png -r ${dpi} -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputPrefix}"`;
 
     exec(cmd, (err) => {
       if (err) return reject(err);
 
-      // 🔑 Find the actual generated file
+      // Find the actual generated file
       const files = fs
         .readdirSync(outputDir)
         .filter(
