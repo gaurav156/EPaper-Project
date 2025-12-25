@@ -282,6 +282,33 @@ function ReaderPage() {
               />
             ))}
           </div>
+
+          {extracting && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(255,255,255,0.6)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 50,
+                pointerEvents: "none"
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px 18px",
+                  background: "#fff",
+                  borderRadius: 6,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  fontSize: 14
+                }}
+              >
+                Extracting article…
+              </div>
+            </div>
+          )}
         </div>
 
         <div
