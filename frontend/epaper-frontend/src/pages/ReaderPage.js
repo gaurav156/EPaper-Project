@@ -21,6 +21,7 @@ function ReaderPage() {
   const pinchStartZoom = useRef(1);
 
   const [extracting, setExtracting] = useState(false);
+  const extractLockRef = useRef(false);
 
   useEffect(() => {
     API.get(`/editions/${editionId}`).then((res) => {
@@ -274,22 +275,31 @@ function ReaderPage() {
                   height: `${mask.height * 100}%`
                 }}
                 onClick={async () => {
+                  if (extractLockRef.current) return;
+
+                  extractLockRef.current = true;
                   setExtracting(true);
 
-                  const res = await API.post(
-                    "/articles/extract",
-                    {
-                      s3Key: edition.s3Key,
-                      pageNumber: Number(pageNumber),
-                      mask,
-                      newspaperName: edition.newspaperName,
-                      editionDate: edition.editionDate
-                    },
-                    { responseType: "blob" }
-                  );
+                  try {
+                    const res = await API.post(
+                      "/articles/extract",
+                      {
+                        s3Key: edition.s3Key,
+                        pageNumber: Number(pageNumber),
+                        mask,
+                        newspaperName: edition.newspaperName,
+                        editionDate: edition.editionDate
+                      },
+                      { responseType: "blob" }
+                    );
 
-                  setArticleUrl(URL.createObjectURL(res.data));
-                  setExtracting(false);
+                    setArticleUrl(URL.createObjectURL(res.data));
+                  } finally {
+                    setExtracting(false);
+                    setTimeout(() => {
+                      extractLockRef.current = false;
+                    }, 500); // debounce window
+                  }
                 }}
               />
             ))}
