@@ -38,6 +38,8 @@ router.get("/image", async (req, res) => {
       "public, max-age=31536000, immutable"
     );
 
+    res.setHeader("Vary", "Accept");
+
     res.sendFile(imagePath);
   } catch (err) {
     console.error("Page image error:", err);
