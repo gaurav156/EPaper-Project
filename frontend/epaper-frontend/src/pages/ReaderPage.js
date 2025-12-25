@@ -51,6 +51,18 @@ function ReaderPage() {
     setMasks([]);
   }, [pageNumber]);
 
+  useEffect(() => {
+    if (!edition) return;
+
+    const next = Number(pageNumber) + 1;
+    if (next <= edition.pageCount) {
+      new Image().src =
+        `http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
+          edition.s3Key
+        )}&pageNumber=${next}&quality=high`;
+    }
+  }, [edition, pageNumber]);
+
   const handleWheel = (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
