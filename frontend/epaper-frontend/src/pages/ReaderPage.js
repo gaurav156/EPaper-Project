@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import Skeleton from "../components/Skeleton";
 import ProgressiveImage from "../components/ProgressiveImage";
+import LazyThumbnail from "../components/LazyThumbnail";
 
 function ReaderPage() {
   const { date, editionId, pageNumber } = useParams();
@@ -160,7 +161,7 @@ function ReaderPage() {
                   padding: 2
                 }}
               > 
-                <ProgressiveImage
+                <LazyThumbnail
                   lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
                     edition.s3Key
                   )}&pageNumber=${p}&quality=low`}
@@ -168,7 +169,6 @@ function ReaderPage() {
                     edition.s3Key
                   )}&pageNumber=${p}&quality=high`}
                   alt={`Page ${p}`}
-                  imgStyle={{ width: "100%", minHeight: 180 }}
                 />
                 <div
                   style={{
