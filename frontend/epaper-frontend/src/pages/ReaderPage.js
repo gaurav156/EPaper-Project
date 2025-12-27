@@ -64,7 +64,6 @@ function ReaderPage() {
 
   useEffect(() => {
     setPageReady(false);
-    setMasks([]);
   }, [pageNumber]);
 
   useEffect(() => {

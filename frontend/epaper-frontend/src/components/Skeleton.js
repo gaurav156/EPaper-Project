@@ -10,6 +10,7 @@ function Skeleton({ width = "100%", height = 16, radius = 4, style, shimmer }) {
           : "#eee",
         backgroundSize: shimmer ? "400% 100%" : undefined,
         animation: shimmer ? "shimmer 1.4s ease infinite" : undefined,
+        pointerEvents: "none",
         ...style
       }}
     />
