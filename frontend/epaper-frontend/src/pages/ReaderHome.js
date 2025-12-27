@@ -107,6 +107,7 @@ function ReaderHome() {
                     height: "100%",
                     objectFit: "cover"
                   }}
+                  fadeDuration={200}
                 />
               </div>
 

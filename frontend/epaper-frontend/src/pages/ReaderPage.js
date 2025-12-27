@@ -5,6 +5,7 @@ import Skeleton from "../components/Skeleton";
 import ProgressiveImage from "../components/ProgressiveImage";
 import LazyThumbnail from "../components/LazyThumbnail";
 import { pageImageUrl } from "../utils/imageUrl";
+import { imagePrefetchQueue } from "../utils/imagePrefetchQueue";
 
 function ReaderPage() {
   const { date, editionId, pageNumber } = useParams();
@@ -70,14 +71,17 @@ function ReaderPage() {
     if (!edition) return;
 
     const next = Number(pageNumber) + 1;
-    if (next <= edition.pageCount) {      
-      new Image().src = pageImageUrl({
-        s3Key: edition.s3Key,
-        pageNumber: next,
-        quality: "low"
-      });
-  
+    if (next <= edition.pageCount) {
+      imagePrefetchQueue.enqueue(
+        pageImageUrl({
+          s3Key: edition.s3Key,
+          pageNumber: next,
+          quality: "low"
+        })
+      );
     }
+
+    return () => imagePrefetchQueue.clear();
   }, [edition, pageNumber]);
 
   useEffect(() => {
@@ -282,6 +286,7 @@ function ReaderPage() {
                 pointerEvents: "none",
                 userSelect: "none"
               }}
+              fadeDuration={350}
               onLoad={() => setPageReady(true)}
             />
 

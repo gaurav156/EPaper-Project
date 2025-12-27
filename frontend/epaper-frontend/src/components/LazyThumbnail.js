@@ -1,23 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import ProgressiveImage from "./ProgressiveImage";
+import { observe, unobserve } from "../utils/visibilityObserver";
 
 function LazyThumbnail({ lowSrc, highSrc, alt, style, imgStyle }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "100px" } // preload slightly before visible
-    );
+    const node = ref.current;
+    if (!node) return;
 
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    observe(node, () => setVisible(true));
+
+    return () => {
+      unobserve(node);
+    };
   }, []);
 
   return (
@@ -28,6 +25,7 @@ function LazyThumbnail({ lowSrc, highSrc, alt, style, imgStyle }) {
           highSrc={highSrc}
           alt={alt}
           imgStyle={{ width: "100%", ...imgStyle }}
+          fadeDuration={200}
         />
       )}
     </div>
