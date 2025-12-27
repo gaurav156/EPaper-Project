@@ -37,6 +37,9 @@ app.use("/api/articles", articleRoutes);
 const editionRoutes = require("./routes/editions");
 app.use("/api/editions", editionRoutes);
 
+const adminRoutes = require("./routes/admin");
+app.use("/api/admin", adminRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

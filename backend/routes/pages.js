@@ -1,13 +1,15 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const convertPageToImage = require("../utils/pdfToImage");
+const { convertPageToImage, maybeConvertToWebp } = require("../utils/pdfToImage");
 const downloadPdfFromS3 = require("../utils/s3Download");
+const cleanupImageCache = require("../utils/cleanupImageCache");
 
 const router = express.Router();
 
 router.get("/image", async (req, res) => {
   const { s3Key, pageNumber, quality = "high" } = req.query;
+  const format = req.query.format || "png";
 
   if (!s3Key || !pageNumber) {
     return res.status(400).json({ error: "Missing s3Key or pageNumber" });
@@ -33,6 +35,10 @@ router.get("/image", async (req, res) => {
       { quality }
     );
 
+    if (format === "webp") {
+      imagePath = await maybeConvertToWebp(imagePath);
+    }
+
     res.setHeader(
       "Cache-Control",
       "public, max-age=31536000, immutable"
@@ -44,6 +50,12 @@ router.get("/image", async (req, res) => {
   } catch (err) {
     console.error("Page image error:", err);
     res.status(500).json({ error: err.message });
+  } finally {
+    try {
+      cleanupImageCache(path.join(__dirname, "../temp"));
+    } catch (err) {
+      console.error("Error while cleaning image cache:", err);
+    }
   }
 });
 

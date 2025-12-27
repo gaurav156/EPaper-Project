@@ -1,6 +1,8 @@
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
+const { ENABLE_WEBP } = require("../config/features");
 
 function convertPageToImage(
   pdfPath,
@@ -53,4 +55,20 @@ function convertPageToImage(
   });
 }
 
-module.exports = convertPageToImage;
+async function maybeConvertToWebp(pngPath) {
+  if (!ENABLE_WEBP) return pngPath;
+
+  const webpPath = pngPath.replace(".png", ".webp");
+
+  if (fs.existsSync(webpPath)) {
+    return webpPath;
+  }
+
+  await sharp(pngPath)
+    .webp({ quality: 80 })
+    .toFile(webpPath);
+
+  return webpPath;
+}
+
+module.exports = { convertPageToImage, maybeConvertToWebp };

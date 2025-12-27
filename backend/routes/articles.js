@@ -3,8 +3,9 @@ const path = require("path");
 const fs = require("fs");
 const cropArticle = require("../utils/cropArticle");
 const downloadPdfFromS3 = require("../utils/s3Download");
-const convertPageToImage = require("../utils/pdfToImage");
+const { convertPageToImage, maybeConvertToWebp} = require("../utils/pdfToImage");
 const getArticleCacheKey = require("../utils/articleCacheKey");
+const cleanupImageCache = require("../utils/cleanupImageCache");
 
 const router = express.Router();
 
@@ -16,6 +17,8 @@ router.post("/extract", async (req, res) => {
     newspaperName,
     editionDate
   } = req.body;
+
+  const format = req.query.format || "png";
 
   try {
     // Download PDF
@@ -35,6 +38,10 @@ router.post("/extract", async (req, res) => {
       tempDir,
       { quality: "high" }
     );
+
+    if (format === "webp") {
+      pageImagePath = await maybeConvertToWebp(pageImagePath);
+    }
 
     // Article cache key
     const cacheKey = getArticleCacheKey({
@@ -57,6 +64,12 @@ router.post("/extract", async (req, res) => {
   } catch (err) {
     console.error("Article extract error:", err);
     res.status(500).json({ error: err.message });
+  } finally {
+    try {
+      cleanupImageCache(path.join(__dirname, "../temp"));
+    } catch (err) {
+      console.error("Error while cleaning image cache:", err);
+    }
   }
 });
 

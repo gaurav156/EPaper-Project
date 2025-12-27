@@ -1,4 +1,4 @@
-const convertPageToImage = require("./pdfToImage");
+const { convertPageToImage } = require("./pdfToImage");
 
 const queue = [];
 let running = false;
