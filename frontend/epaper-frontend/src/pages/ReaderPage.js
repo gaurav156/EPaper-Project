@@ -4,6 +4,7 @@ import API from "../services/api";
 import Skeleton from "../components/Skeleton";
 import ProgressiveImage from "../components/ProgressiveImage";
 import LazyThumbnail from "../components/LazyThumbnail";
+import { pageImageUrl } from "../utils/imageUrl";
 
 function ReaderPage() {
   const { date, editionId, pageNumber } = useParams();
@@ -23,6 +24,8 @@ function ReaderPage() {
   const [extracting, setExtracting] = useState(false);
   const extractLockRef = useRef(false);
 
+  const maskCache = useRef(new Map());
+
   useEffect(() => {
     API.get(`/editions/${editionId}`).then((res) => {
       setEdition(res.data);
@@ -30,12 +33,23 @@ function ReaderPage() {
   }, [editionId]);
 
   useEffect(() => {
-    if (!edition) return;
+    const key = `${editionId}-${pageNumber}`;
+
+    if (maskCache.current.has(key)) {
+      setMasks(maskCache.current.get(key));
+      return;
+    }
 
     API.get(`/masks?editionId=${editionId}&pageNumber=${pageNumber}`)
-      .then((res) => setMasks(res.data));
+      .then(res => {
+        maskCache.current.set(key, res.data);
+        setMasks(res.data);
+      });
+  }, [editionId, pageNumber]);
 
-  }, [edition, editionId, pageNumber]);
+  useEffect(() => {
+    maskCache.current.clear();
+  }, [editionId]);
 
   useEffect(() => {
     setZoom(1);
@@ -57,13 +71,23 @@ function ReaderPage() {
     if (!edition) return;
 
     const next = Number(pageNumber) + 1;
-    if (next <= edition.pageCount) {
-      new Image().src =
-        `http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-          edition.s3Key
-        )}&pageNumber=${next}&quality=high`;
+    if (next <= edition.pageCount) {      
+      new Image().src = pageImageUrl({
+        s3Key: edition.s3Key,
+        pageNumber: next,
+        quality: "low"
+      });
+  
     }
   }, [edition, pageNumber]);
+
+  useEffect(() => {
+    return () => {
+      if (articleUrl) {
+        URL.revokeObjectURL(articleUrl);
+      }
+    };
+  }, [articleUrl]);
 
   const handleWheel = (e) => {
     if (!e.ctrlKey) return;

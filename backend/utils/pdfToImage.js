@@ -15,22 +15,10 @@ function convertPageToImage(
       outputDir,
       `page-${pageNumber}-${quality}`
     );
+    const outputImage = `${outputPrefix}.png`;
 
-    // pdftoppm output format:
-    // <prefix>-<pageNumber>.png
-    // const outputImage = `${outputPrefix}-${pageNumber}.png`;
-
-    // // Cache hit (quality-aware)
-    const files = fs
-      .readdirSync(outputDir)
-      .filter(
-        (f) =>
-          f.startsWith(`page-${pageNumber}-${quality}`) &&
-          f.endsWith(".png")
-      );
-
-    if (files.length) {
-      return resolve(path.join(outputDir, files[0]));
+    if (fs.existsSync(outputImage)) {
+      return resolve(outputImage);
     }
 
     const cmd = `pdftoppm -png -r ${dpi} -f ${pageNumber} -l ${pageNumber} "${pdfPath}" "${outputPrefix}"`;
@@ -38,22 +26,29 @@ function convertPageToImage(
     exec(cmd, (err) => {
       if (err) return reject(err);
 
-      // Find the actual generated file
-      const files = fs
-        .readdirSync(outputDir)
-        .filter(
-          (f) =>
-            f.startsWith(`page-${pageNumber}-${quality}`) &&
-            f.endsWith(".png")
-        );
+      // pdftoppm creates page-1-high-1.png
+      const generated = `${outputPrefix}-${pageNumber}.png`;
 
-      if (!files.length) {
+      if (!fs.existsSync(generated)) {
+        const files = fs
+          .readdirSync(outputDir)
+          .filter(
+            (f) =>
+              f.startsWith(outputPrefix) &&
+              f.endsWith(".png")
+          );
+
+        if (files.length) {
+          return resolve(path.join(outputDir, files[0]));
+        }
+
         return reject(
-          new Error("pdftoppm did not generate an image")
+          new Error(`pdftoppm did not generate expected file: ${generated}`)
         );
       }
 
-      resolve(path.join(outputDir, files[0]));
+      fs.renameSync(generated, outputImage);
+      resolve(outputImage);
     });
   });
 }
