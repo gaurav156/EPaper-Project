@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const getPdfPageCount = require("../utils/pdfInfo");
 const requireAdmin = require("../middleware/requireAdmin");
-const { enqueuePageRender } = require("../utils/pageRenderQueue");
+// const { enqueuePageRender } = require("../utils/pageRenderQueue");
 
 const router = express.Router();
 
@@ -80,21 +80,21 @@ router.post("/", requireAdmin, upload.single("file"), async (req, res) => {
       edition
     });
 
-    for (let page = 1; page <= edition.pageCount; page++) {
-      enqueuePageRender({
-        pdfPath: localPdfPath,
-        pageNumber: page,
-        outputDir: editionTempDir,
-        quality: "high"
-      });
+    // for (let page = 1; page <= edition.pageCount; page++) {
+    //   enqueuePageRender({
+    //     pdfPath: localPdfPath,
+    //     pageNumber: page,
+    //     outputDir: editionTempDir,
+    //     quality: "high"
+    //   });
 
-      enqueuePageRender({
-        pdfPath: localPdfPath,
-        pageNumber: page,
-        outputDir: editionTempDir,
-        quality: "low"
-      });
-    }
+    //   enqueuePageRender({
+    //     pdfPath: localPdfPath,
+    //     pageNumber: page,
+    //     outputDir: editionTempDir,
+    //     quality: "low"
+    //   });
+    // }
 
   } catch (err) {
     res.status(500).json({ error: err.message });
