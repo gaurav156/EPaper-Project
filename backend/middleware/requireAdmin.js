@@ -1,22 +1,20 @@
 const jwt = require("jsonwebtoken");
 
 module.exports = function requireAdmin(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header) return res.sendStatus(401);
-
-  const token = header.split(" ")[1];
+  const token = req.cookies?.accessToken;
+  if (!token) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ message: "Admin only" });
+    }
 
-    if (!decoded.isAdmin) return res.sendStatus(403);
-
-    req.user = decoded; // IMPORTANT for audit logs
+    req.user = decoded; // for audit logs
     next();
-  } catch {
-    res.sendStatus(401);
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };

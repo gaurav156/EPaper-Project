@@ -12,7 +12,7 @@ function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // ⬅️ IMPORTANT: prevents Enter/Tab mishaps
+    e.preventDefault(); // IMPORTANT: prevents Enter/Tab mishaps
 
     if (!email || !password) {
       setError("Email and password are required");
@@ -23,11 +23,7 @@ function AdminLogin() {
     setError(null);
 
     try {
-      const res = await API.post("/auth/login", { email, password });
-
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("refreshToken", res.data.refreshToken);
-
+      await API.post("/auth/login", { email, password });
       navigate("/admin", { replace: true });
     } catch (err) {
       const status = err.response?.status;

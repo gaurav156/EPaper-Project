@@ -2,6 +2,12 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const requireAdmin = require("../middleware/requireAdmin");
+const {
+  signAccessToken,
+  signRefreshToken,
+  hashToken
+} = require("../utils/token");
 
 const router = express.Router();
 
@@ -51,44 +57,94 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const accessToken = jwt.sign(
-      { id: user._id, isAdmin: true },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "15m" }
-    );
+    const accessToken = signAccessToken(user);
+    const refreshToken = signRefreshToken(user);
 
-    const refreshToken = jwt.sign(
-      { id: user._id, isAdmin: true },
-      process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d" }
-    );
+    user.refreshTokenHash = hashToken(refreshToken);
+    await user.save();
 
-    res.json({ accessToken, refreshToken });
+    // Cookies
+    res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+      .json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post("/refresh", async (req, res) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) return res.sendStatus(401);
+  const token = req.cookies.refreshToken;
+  if (!token) return res.sendStatus(401);
 
   try {
-    const payload = jwt.verify(
-      refreshToken,
-      process.env.REFRESH_TOKEN_SECRET
-    );
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(payload.id);
 
-    const accessToken = jwt.sign(
-      { id: payload.id, isAdmin: payload.isAdmin },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "15m" }
-    );
+    if (!user) return res.sendStatus(403);
 
-    res.json({ accessToken });
+    // Rotation check
+    if (hashToken(token) !== user.refreshTokenHash) {
+      user.refreshTokenHash = null;
+      await user.save();
+      return res.sendStatus(403);
+    }
+
+    const newAccess = signAccessToken(user);
+    const newRefresh = signRefreshToken(user);
+
+    user.refreshTokenHash = hashToken(newRefresh);
+    await user.save();
+
+    res
+      .cookie("accessToken", newAccess, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000
+      })
+      .cookie("refreshToken", newRefresh, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+      .json({ success: true });
+
   } catch {
     res.sendStatus(403);
   }
+});
+
+router.post("/logout", async (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      await User.findByIdAndUpdate(payload.id, {
+        refreshTokenHash: null
+      });
+    } catch {}
+  }
+
+  res
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json({ success: true });
+});
+
+router.get("/me", requireAdmin, (req, res) => {
+  res.json({ ok: true });
 });
 
 module.exports = router;

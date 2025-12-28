@@ -4,9 +4,18 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
+const cookieParser = require("cookie-parser");
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
+    credentials: true
+  })
+);
+
 app.use(express.json());
+
+app.use(cookieParser());
 
 // MongoDB Connection
 mongoose
