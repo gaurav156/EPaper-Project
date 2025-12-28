@@ -3,13 +3,9 @@ import Upload from "./Upload";
 import AdminEdition from "./AdminEdition";
 import AdminMask from "./AdminMask";
 import AdminHome from "./AdminHome";
+import { logout } from "../services/api";
 
 function AdminDashboard() {
-  const logout = () => {
-    localStorage.removeItem("adminToken");
-    window.location.href = "/admin/login";
-  };
-
   return (
     <div
       style={{
@@ -50,7 +46,7 @@ function AdminDashboard() {
         }}
       >
         <Routes>
-          <Route path="/" element={<AdminHome />} />
+          <Route index element={<AdminHome />} />
           <Route path="upload" element={<Upload />} />
           <Route path="edition/:editionId" element={<AdminEdition />} />
           <Route

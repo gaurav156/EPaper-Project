@@ -1,9 +1,10 @@
 import { Navigate } from "react-router-dom";
+import { isTokenExpired } from "../utils/auth";
 
 function AdminRoute({ children }) {
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("accessToken");
 
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
     return <Navigate to="/admin/login" replace />;
   }
 

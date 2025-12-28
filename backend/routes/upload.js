@@ -7,6 +7,7 @@ const path = require("path");
 const getPdfPageCount = require("../utils/pdfInfo");
 const requireAdmin = require("../middleware/requireAdmin");
 // const { enqueuePageRender } = require("../utils/pageRenderQueue");
+const audit = require("../middleware/audit");
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Upload PDF/Image
-router.post("/", requireAdmin, upload.single("file"), async (req, res) => {
+router.post("/", requireAdmin, audit("UPLOAD", "EDITION"), upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
 

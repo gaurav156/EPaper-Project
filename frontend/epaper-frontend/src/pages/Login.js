@@ -10,7 +10,8 @@ function Login() {
   const handleLogin = async () => {
     try {
       const res = await API.post("/auth/login", { email, password });
-      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("accessToken", res.data.accessToken);
+      localStorage.setItem("refreshToken", res.data.refreshToken);
       navigate("/upload");
     } catch (err) {
       alert("Login failed");

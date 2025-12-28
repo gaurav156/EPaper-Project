@@ -51,15 +51,43 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { id: user._id, isAdmin: true },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
     );
 
-    res.json({ token });
+    const refreshToken = jwt.sign(
+      { id: user._id, isAdmin: true },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ accessToken, refreshToken });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/refresh", async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.sendStatus(401);
+
+  try {
+    const payload = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const accessToken = jwt.sign(
+      { id: payload.id, isAdmin: payload.isAdmin },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.json({ accessToken });
+  } catch {
+    res.sendStatus(403);
   }
 });
 

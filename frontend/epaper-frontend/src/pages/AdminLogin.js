@@ -13,7 +13,8 @@ function AdminLogin() {
     }
     try {
       const res = await API.post("/auth/login", { email, password });
-      localStorage.setItem("adminToken", res.data.token);
+      localStorage.setItem("accessToken", res.data.accessToken);
+      localStorage.setItem("refreshToken", res.data.refreshToken);
       navigate("/admin");
     } catch {
       alert("Invalid credentials");
@@ -21,7 +22,7 @@ function AdminLogin() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
+    const token = localStorage.getItem("accessToken");
     if (token) {
         navigate("/admin");
     }

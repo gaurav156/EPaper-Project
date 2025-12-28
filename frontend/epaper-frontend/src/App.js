@@ -7,6 +7,9 @@ import ReaderPage from "./pages/ReaderPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRoute from "./components/AdminRoute";
+import { logout } from "./services/api";
+import { isTokenExpired } from "./utils/auth";
+import API from "./services/api";
 import "./App.css";
 
 function App() {
@@ -39,6 +42,24 @@ function App() {
       document.removeEventListener("cut", preventCopy);
       document.removeEventListener("contextmenu", preventCopy);
     };
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token && isTokenExpired(token)) {
+      logout();
+    }
+  }, []);
+
+  useEffect(() => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) return;
+
+    API.post("/auth/refresh", { refreshToken })
+      .then(res => {
+        localStorage.setItem("accessToken", res.data.accessToken);
+      })
+      .catch(logout);
   }, []);
 
   return (

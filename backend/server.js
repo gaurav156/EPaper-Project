@@ -19,8 +19,24 @@ app.get("/", (req, res) => {
   res.send("E-Paper Backend is running 🚀");
 });
 
+const rateLimit = require("express-rate-limit");
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300
+});
+
+app.use("/api", apiLimiter);
+
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10
+});
+
+app.use("/api/auth/login", authLimiter);
 
 const uploadRoutes = require("./routes/upload");
 app.use("/api/upload", uploadRoutes);
