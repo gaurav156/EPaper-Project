@@ -22,6 +22,13 @@ function AdminSessions() {
     });
   }, []);
 
+  useEffect(() => {
+    fetchSessions();
+
+    const id = setInterval(fetchSessions, 10000);
+    return () => clearInterval(id);
+  }, []);
+
   const handleForceLogout = async () => {
     try {
       await API.delete(`/admin/sessions/${confirmId}`);
@@ -34,9 +41,41 @@ function AdminSessions() {
     }
   };
 
+  const statusBadge = status => {
+    const colors = {
+      ACTIVE: "#2e7d32",
+      REVOKED: "#d32f2f",
+      EXPIRED: "#6c757d"
+    };
+
+    return (
+      <span
+        style={{
+          padding: "2px 8px",
+          borderRadius: 12,
+          fontSize: 12,
+          color: "#fff",
+          background: colors[status]
+        }}
+      >
+        {status}
+      </span>
+    );
+  };
+
+  const timeAgo = date => {
+    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
+
   return (
     <div style={{ padding: 20 }}>
-      <h2>Active Admin Sessions</h2>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <h2 style={{ margin: 0 }}>Admin Sessions</h2>
+        <button onClick={fetchSessions}>🔄 Refresh</button>
+      </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
@@ -74,9 +113,9 @@ function AdminSessions() {
                 </Td>
 
                 <Td>{s.ip}</Td>
-                <Td>{new Date(s.lastSeenAt).toLocaleString()}</Td>
+                <Td>{timeAgo(s.lastSeenAt)}</Td>
                 <Td>{new Date(s.expiresAt).toLocaleString()}</Td>
-                <Td>{s.status}</Td>
+                <Td>{statusBadge(s.status)}</Td>
                 <Td>
                   {!isCurrent && s.status === "ACTIVE" && (
                     <button

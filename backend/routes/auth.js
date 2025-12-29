@@ -200,27 +200,27 @@ router.post("/refresh", async (req, res) => {
 });
 
 router.post("/logout", requireAdmin, async (req, res) => {
-  const token = req.cookies.refreshToken;
+  try {
+    const sessionId = req.user.sid;
 
-  if (token) {
-    try {
-      const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    // Revoke this session
+    await AdminSession.findByIdAndUpdate(sessionId, {
+      revokedAt: new Date()
+    });
 
-      await User.findByIdAndUpdate(payload.id, {
-        refreshTokenHash: null
-      });
-
-      await AuditLog.create({
-        userId: payload.id,
-        action: "ADMIN_LOGOUT",
-        resource: "AUTH",
-        ip: req.ip,
-        userAgent: parseUA(req.headers["user-agent"]),
-        metadata: {
-          reason: "USER_INITIATED"
-        }
-      });
-    } catch {}
+    await AuditLog.create({
+      userId: req.user.id,
+      action: "ADMIN_LOGOUT",
+      resource: "AUTH",
+      ip: req.ip,
+      userAgent: parseUA(req.headers["user-agent"]),
+      metadata: {
+        reason: "USER_INITIATED",
+        sessionId
+      }
+    });
+  } catch (err) {
+    // swallow errors
   }
 
   res

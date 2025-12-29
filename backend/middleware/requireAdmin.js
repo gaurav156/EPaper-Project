@@ -18,7 +18,7 @@ module.exports = async function requireAdmin(req, res, next) {
     if (!session) return res.sendStatus(401);
 
     if (session.revokedAt) {
-      return res.status(401).json({ message: "Session revoked" });
+      return res.status(401).json({ message: "Session revoked", reason: "SESSION_REVOKED" });
     }
 
     req.user = decoded; // for audit logs

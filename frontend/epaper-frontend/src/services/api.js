@@ -13,7 +13,7 @@ API.interceptors.response.use(
   err => {
     if (
       err.response?.status === 401 &&
-      err.config?.url !== "/auth/me"
+      err.response?.data?.reason === "SESSION_REVOKED"
     ) {
       toast.error("Your session was terminated by an administrator");
       window.location.href = "/admin/login";

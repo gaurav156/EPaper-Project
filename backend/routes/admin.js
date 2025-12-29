@@ -14,9 +14,15 @@ router.get("/cache-stats", requireAdmin, (req, res) => {
 });
 
 router.get("/sessions", requireAdmin, async (req, res) => {
-  const sessions = await AdminSession.find()
+  const { page = 1, limit = 20, status } = req.query;
+
+  const query = {};
+  if (status === "ACTIVE") query.revokedAt = null;
+
+  const sessions = await AdminSession.find(query)
     .sort({ lastSeenAt: -1 })
-    .limit(50)
+    .skip((page - 1) * limit)
+    .limit(Number(limit))
     .lean();
 
   res.json(
