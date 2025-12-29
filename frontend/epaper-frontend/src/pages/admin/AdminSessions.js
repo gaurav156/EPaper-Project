@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
+import ConfirmModal from "../../components/ConfirmModal";
 
 function AdminSessions() {
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const fetchSessions = async () => {
     const res = await API.get("/admin/sessions");
@@ -20,17 +22,15 @@ function AdminSessions() {
     });
   }, []);
 
-  const handleForceLogout = async (sessionId) => {
-    if (!window.confirm("Are you sure you want to force logout this session?")) {
-      return;
-    }
-
+  const handleForceLogout = async () => {
     try {
-      await API.delete(`/admin/sessions/${sessionId}`);
+      await API.delete(`/admin/sessions/${confirmId}`);
       toast.success("Session force logged out");
       fetchSessions();
     } catch {
       toast.error("Failed to revoke session");
+    } finally {
+      setConfirmId(null);
     }
   };
 
@@ -45,6 +45,7 @@ function AdminSessions() {
             <Th>IP</Th>
             <Th>Last Seen</Th>
             <Th>Expires</Th>
+            <Th>Status</Th>
             <Th>Action</Th>
           </tr>
         </thead>
@@ -57,6 +58,7 @@ function AdminSessions() {
               <tr
                 key={s._id}
                 style={{
+                  opacity: s.status !== "ACTIVE" ? 0.5 : 1,
                   background: isCurrent ? "#e6f4ff" : "transparent",
                   fontWeight: isCurrent ? "bold" : "normal"
                 }}
@@ -74,12 +76,12 @@ function AdminSessions() {
                 <Td>{s.ip}</Td>
                 <Td>{new Date(s.lastSeenAt).toLocaleString()}</Td>
                 <Td>{new Date(s.expiresAt).toLocaleString()}</Td>
-
+                <Td>{s.status}</Td>
                 <Td>
-                  {!isCurrent && (
+                  {!isCurrent && s.status === "ACTIVE" && (
                     <button
                       style={dangerBtn}
-                      onClick={() => handleForceLogout(s._id)}
+                      onClick={() => setConfirmId(s._id)}
                     >
                       Force Logout
                     </button>
@@ -90,6 +92,13 @@ function AdminSessions() {
           })}
         </tbody>
       </table>
+      <ConfirmModal
+        open={!!confirmId}
+        title="Force logout?"
+        message="This will immediately terminate the user's session."
+        onConfirm={handleForceLogout}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

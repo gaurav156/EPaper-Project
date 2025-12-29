@@ -8,7 +8,10 @@ const AdminSessionSchema = new mongoose.Schema({
   userAgent: String,
   lastSeenAt: Date,
   expiresAt: Date,
-  revokedAt: Date
+  revokedAt: {
+    type: Date,
+    default: null
+  }
 });
 
 module.exports = mongoose.model("AdminSession", AdminSessionSchema);

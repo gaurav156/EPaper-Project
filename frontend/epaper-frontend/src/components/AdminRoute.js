@@ -20,6 +20,20 @@ function AdminRoute({ children }) {
       });
   }, []);
 
+  useEffect(() => {
+    const check = async () => {
+      try {
+        await API.get("/auth/me");
+      } catch {
+        toast.error("Your session was terminated by an administrator");
+        window.location.href = "/admin/login";
+      }
+    };
+
+    const id = setInterval(check, 15_000); // every 15s
+    return () => clearInterval(id);
+  }, []);
+
   if (allowed === null) {
     return (
       <div style={{ padding: 40, textAlign: "center" }}>

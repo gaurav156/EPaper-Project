@@ -16,9 +16,19 @@ router.get("/cache-stats", requireAdmin, (req, res) => {
 router.get("/sessions", requireAdmin, async (req, res) => {
   const sessions = await AdminSession.find()
     .sort({ lastSeenAt: -1 })
-    .limit(50);
+    .limit(50)
+    .lean();
 
-  res.json(sessions);
+  res.json(
+    sessions.map(s => ({
+      ...s,
+      status: s.revokedAt
+        ? "REVOKED"
+        : s.expiresAt < Date.now()
+        ? "EXPIRED"
+        : "ACTIVE"
+    }))
+  );
 });
 
 router.delete("/sessions/:id", requireAdmin, async (req, res) => {
