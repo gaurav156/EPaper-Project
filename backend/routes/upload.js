@@ -18,10 +18,11 @@ const upload = multer({ storage });
 // Upload PDF/Image
 router.post("/", 
   requireAdmin, 
-  audit("UPLOAD", "EDITION", req => ({ 
-    editionDate: req.body.editionDate, 
-    editionType: req.body.editionType 
-  })), 
+  audit("UPLOAD", "EDITION", req => ({
+    editionDate: req.body.editionDate,
+    editionType: req.body.editionType,
+    newspaperName: req.body.newspaperName
+  })),
   upload.single("file"), 
   async (req, res) => {
   try {

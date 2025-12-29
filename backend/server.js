@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const { rateLimit, ipKeyGenerator } = require("express-rate-limit");
 require("dotenv").config();
 require("./utils/imageCleanupScheduler");
 
@@ -13,6 +14,12 @@ app.use(
     credentials: true
   })
 );
+
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1); // 1 = one proxy (nginx / load balancer)
+} else {
+  app.set("trust proxy", false);
+}
 
 app.use(express.json());
 
@@ -29,11 +36,10 @@ app.get("/", (req, res) => {
   res.send("E-Paper Backend is running 🚀");
 });
 
-const rateLimit = require("express-rate-limit");
-
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300
+  max: 300,
+  keyGenerator: ipKeyGenerator
 });
 
 app.use("/api", apiLimiter);
@@ -68,9 +74,6 @@ app.use("/api/admin", adminRoutes);
 
 const adminAuditRoutes = require("./routes/adminAudit");
 app.use("/api/admin/audit", adminAuditRoutes);
-
-const adminSessions = require("./routes/adminSessions");
-app.use("/api/admin/sessions", adminSessions);
 
 const adminMetrics = require("./routes/adminMetrics");
 app.use("/api/admin/metrics", adminMetrics);

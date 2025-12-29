@@ -19,9 +19,6 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    refreshTokenHash: { 
-      type: String 
-    },
     failedLoginAttempts: { type: Number, default: 0 },
     lockUntil: { 
       type: Date 

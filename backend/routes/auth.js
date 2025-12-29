@@ -10,8 +10,15 @@ const {
   signRefreshToken,
   hashToken
 } = require("../utils/token");
+const UAParser = require("ua-parser-js");
+const geoip = require("geoip-lite");
 
 const router = express.Router();
+
+function parseUA(ua) {
+  const p = new UAParser(ua).getResult();
+  return `${p.browser.name} ${p.browser.version} · ${p.os.name}`;
+}
 
 /**
  * ADMIN REGISTER (one-time or protected later)
@@ -48,6 +55,7 @@ router.post("/register-admin", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const geo = geoip.lookup(req.ip);
 
     const user = await User.findOne({ email });
     if (!user || !user.isAdmin) {
@@ -65,32 +73,62 @@ router.post("/login", async (req, res) => {
       user.failedLoginAttempts++;
       if (user.failedLoginAttempts >= 5) {
         user.lockUntil = Date.now() + 15 * 60 * 1000;
+
+        await AuditLog.create({
+          userId: user._id,
+          action: "ADMIN_ACCOUNT_LOCKED",
+          resource: "AUTH",
+          ip: req.ip,
+          userAgent: parseUA(req.headers["user-agent"]),
+          metadata: {
+            lockUntil: user.lockUntil
+          }
+        });
       }
       await user.save();
+
+      await AuditLog.create({
+        userId: user?._id,
+        action: "ADMIN_LOGIN_FAILED",
+        resource: "AUTH",
+        ip: req.ip,
+        geo: geo ? `${geo.city}, ${geo.country}` : "Unknown",
+        userAgent: parseUA(req.headers["user-agent"]),
+        metadata: {
+          reason: "INVALID_PASSWORD"
+        }
+      });
+
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);
 
-    user.refreshTokenHash = hashToken(refreshToken);
     user.failedLoginAttempts = 0;
     user.lockUntil = null;
     await user.save();
 
-    await AdminSession.create({
+    const session = await AdminSession.create({
       userId: user._id,
+      refreshTokenHash: hashToken(refreshToken),
       ip: req.ip,
-      userAgent: req.headers["user-agent"],
+      userAgent: parseUA(req.headers["user-agent"]),
       lastSeenAt: new Date(),
       expiresAt: Date.now() + 7*24*60*60*1000
     });
 
+    const accessToken = signAccessToken(user, session._id);
+
     await AuditLog.create({
       userId: user._id,
       action: "ADMIN_LOGIN_SUCCESS",
+      resource: "AUTH",
       ip: req.ip,
-      userAgent: req.headers["user-agent"]
+      geo: geo ? `${geo.city}, ${geo.country}` : "Unknown",
+      userAgent: parseUA(req.headers["user-agent"]),
+      metadata: {
+        sessionId: session._id
+      }
     });
 
     const isProd = process.env.NODE_ENV === "production";
@@ -100,13 +138,13 @@ router.post("/login", async (req, res) => {
       .cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? "strict" : "lax",
+        sameSite: isProd ? "none" : "lax",
         maxAge: 15 * 60 * 1000
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? "strict" : "lax",
+        sameSite: isProd ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       })
       .json({ success: true });
@@ -121,34 +159,37 @@ router.post("/refresh", async (req, res) => {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(payload.id);
 
-    if (!user) return res.sendStatus(403);
+    const session = await AdminSession.findById(payload.sid);
+    if (!session || session.revokedAt) return res.sendStatus(403);
 
-    // Rotation check
-    if (hashToken(token) !== user.refreshTokenHash) {
-      user.refreshTokenHash = null;
-      await user.save();
+    if (hashToken(token) !== session.refreshTokenHash) {
+      session.revokedAt = new Date();
+      await session.save();
       return res.sendStatus(403);
     }
 
-    const newAccess = signAccessToken(user);
-    const newRefresh = signRefreshToken(user);
+    const user = await User.findById(session.userId);
+    if (!user) return res.sendStatus(403);
 
-    user.refreshTokenHash = hashToken(newRefresh);
-    await user.save();
+    const newRefresh = signRefreshToken(user, session._id);
+    session.refreshTokenHash = hashToken(newRefresh);
+    session.lastSeenAt = new Date();
+    await session.save();
+
+    const newAccess = signAccessToken(user, session._id);
 
     res
       .cookie("accessToken", newAccess, {
         httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 15 * 60 * 1000
       })
       .cookie("refreshToken", newRefresh, {
         httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       })
       .json({ success: true });
@@ -158,13 +199,26 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-router.post("/logout", async (req, res) => {
+router.post("/logout", requireAdmin, async (req, res) => {
   const token = req.cookies.refreshToken;
+
   if (token) {
     try {
       const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
       await User.findByIdAndUpdate(payload.id, {
         refreshTokenHash: null
+      });
+
+      await AuditLog.create({
+        userId: payload.id,
+        action: "ADMIN_LOGOUT",
+        resource: "AUTH",
+        ip: req.ip,
+        userAgent: parseUA(req.headers["user-agent"]),
+        metadata: {
+          reason: "USER_INITIATED"
+        }
       });
     } catch {}
   }
@@ -176,7 +230,10 @@ router.post("/logout", async (req, res) => {
 });
 
 router.get("/me", requireAdmin, (req, res) => {
-  res.json({ ok: true });
+  res.json({
+    userId: req.user.id,
+    sessionId: req.user.sid
+  });
 });
 
 module.exports = router;

@@ -1,14 +1,16 @@
-module.exports = function audit(action, resource, metaBuilder) {
+const AuditLog = require("../models/AuditLog");
+
+module.exports = function audit(action, resource, detailsFn) {
   return (req, res, next) => {
-    res.on("finish", () => {
+    res.on("finish", async () => {
       if (res.statusCode < 400) {
-        AuditLog.create({
+        await AuditLog.create({
           userId: req.user?.id,
           action,
           resource,
+          details: detailsFn ? detailsFn(req) : undefined,
           ip: req.ip,
-          userAgent: req.headers["user-agent"],
-          meta: metaBuilder ? metaBuilder(req) : undefined
+          userAgent: req.headers["user-agent"]
         });
       }
     });

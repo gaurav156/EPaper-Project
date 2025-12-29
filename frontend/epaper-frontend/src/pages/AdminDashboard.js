@@ -3,7 +3,8 @@ import Upload from "./Upload";
 import AdminEdition from "./AdminEdition";
 import AdminMask from "./AdminMask";
 import AdminHome from "./AdminHome";
-import AuditLogs from "./admin/AuditLogs";
+import AdminSessions from "./admin/AdminSessions"; 
+import AuditLogs from "./admin/AuditLogs"; 
 import { logout } from "../services/api";
 import useIdleLogout from "../hooks/useIdleLogout";
 
@@ -33,6 +34,7 @@ function AdminDashboard() {
       >
         <Link title="Dashboard" to="/admin">📊</Link>
         <Link title="Upload Edition" to="/admin/upload">⬆️</Link>
+        <Link title="Sessions" to="/admin/sessions">🖥️</Link>
         <Link title="Audit Logs" to="/admin/audit">📜</Link>
 
         <div style={{ flex: 1 }} />
@@ -57,6 +59,7 @@ function AdminDashboard() {
             path="edition/:editionId/page/:pageNumber"
             element={<AdminMask />}
           />
+          <Route path="sessions" element={<AdminSessions />} />
           <Route path="audit" element={<AuditLogs />} />
         </Routes>
       </main>
