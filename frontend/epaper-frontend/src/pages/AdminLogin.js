@@ -31,7 +31,9 @@ function AdminLogin() {
       if (status === 401) {
         setError("Invalid email or password");
       } else if (status === 429) {
-        setError("Too many login attempts. Please wait.");
+        setError("Too many login attempts. Please Try again later.");
+      } else if (status === 423) {
+        setError("Login failed. Error: " + err.response.data.message);
       } else {
         setError("Login failed. Try again later.");
       }

@@ -5,7 +5,7 @@ const cropArticle = require("../utils/cropArticle");
 const downloadPdfFromS3 = require("../utils/s3Download");
 const { convertPageToImage, maybeConvertToWebp} = require("../utils/pdfToImage");
 const getArticleCacheKey = require("../utils/articleCacheKey");
-const cleanupImageCache = require("../utils/cleanupImageCache");
+const ViewMetric = require("../models/ViewMetric");
 
 const router = express.Router();
 
@@ -15,10 +15,15 @@ router.post("/extract", async (req, res) => {
     pageNumber,
     mask,
     newspaperName,
-    editionDate
+    editionDate,
+    editionId
   } = req.body;
 
   const format = req.query.format || "png";
+
+  if (!s3Key || !pageNumber || !mask) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
 
   try {
     // Download PDF
@@ -31,8 +36,7 @@ router.post("/extract", async (req, res) => {
     );
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-    // Page image (already cached)
-    const pageImagePath = await convertPageToImage(
+    let pageImagePath = await convertPageToImage(
       localPdf,
       pageNumber,
       tempDir,
@@ -60,16 +64,21 @@ router.post("/extract", async (req, res) => {
       cacheKey
     });
 
+    // Article metric only after success
+    if (editionId) {
+      ViewMetric.create({
+        type: "ARTICLE",
+        editionId,
+        pageNumber,
+        articleKey: cacheKey
+      }).catch(() => {});
+    }
+
     res.sendFile(articleImagePath);
+
   } catch (err) {
     console.error("Article extract error:", err);
     res.status(500).json({ error: err.message });
-  } finally {
-    try {
-      cleanupImageCache(path.join(__dirname, "../temp"));
-    } catch (err) {
-      console.error("Error while cleaning image cache:", err);
-    }
   }
 });
 

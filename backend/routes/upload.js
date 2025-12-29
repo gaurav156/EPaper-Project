@@ -16,7 +16,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Upload PDF/Image
-router.post("/", requireAdmin, audit("UPLOAD", "EDITION"), upload.single("file"), async (req, res) => {
+router.post("/", 
+  requireAdmin, 
+  audit("UPLOAD", "EDITION", req => ({ 
+    editionDate: req.body.editionDate, 
+    editionType: req.body.editionType 
+  })), 
+  upload.single("file"), 
+  async (req, res) => {
   try {
     const file = req.file;
 

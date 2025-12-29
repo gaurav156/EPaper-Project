@@ -21,6 +21,10 @@ const UserSchema = new mongoose.Schema(
     },
     refreshTokenHash: { 
       type: String 
+    },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { 
+      type: Date 
     }
   },
   { timestamps: true }

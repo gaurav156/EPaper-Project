@@ -7,6 +7,7 @@ function AdminHome() {
   const [date, setDate] = useState(today);  
   const [editions, setEditions] = useState([]);
   const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
     if (!date) return;
@@ -19,9 +20,21 @@ function AdminHome() {
     });
   }, [date]);
 
+  useEffect(() => {
+    API.get("/admin/metrics/summary")
+      .then(res => setStats(res.data));
+  }, []);
+
   return (
     <div>
       <h2>Admin Dashboard</h2>
+
+      {stats && (
+        <div style={{ display: "flex", gap: 16 }}>
+          <div>📄 Page Views: {stats.pages}</div>
+          <div>📰 Articles: {stats.articles}</div>
+        </div>
+      )}
 
       <label>
         Select Date:

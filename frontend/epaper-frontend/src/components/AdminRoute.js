@@ -1,6 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function AdminRoute({ children }) {
   const [allowed, setAllowed] = useState(null);
@@ -8,7 +10,10 @@ function AdminRoute({ children }) {
   useEffect(() => {
     API.get("/auth/me")
       .then(() => setAllowed(true))
-      .catch(() => setAllowed(false));
+      .catch(() => {
+        toast.error("Session expired. Please login again.");
+        setAllowed(false);
+      });
   }, []);
 
   if (allowed === null) {

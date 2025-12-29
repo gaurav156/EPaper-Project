@@ -80,8 +80,6 @@ function ReaderPage() {
         })
       );
     }
-
-    return () => imagePrefetchQueue.clear();
   }, [edition, pageNumber]);
 
   useEffect(() => {
@@ -190,12 +188,16 @@ function ReaderPage() {
                 }}
               > 
                 <LazyThumbnail
-                  lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-                    edition.s3Key
-                  )}&pageNumber=${p}&quality=low`}
-                  highSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-                    edition.s3Key
-                  )}&pageNumber=${p}&quality=high`}
+                  lowSrc={pageImageUrl({
+                    s3Key: edition.s3Key,
+                    pageNumber: p,
+                    quality: "low"
+                  })}
+                  highSrc={pageImageUrl({
+                    s3Key: edition.s3Key,
+                    pageNumber: p,
+                    quality: "high"
+                  })}
                   alt={`Page ${p}`}
                 />
                 <div
@@ -275,12 +277,17 @@ function ReaderPage() {
             )}
 
             <ProgressiveImage
-              lowSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-                edition.s3Key
-              )}&pageNumber=${pageNumber}&quality=low`}
-              highSrc={`http://localhost:5000/api/pages/image?s3Key=${encodeURIComponent(
-                edition.s3Key
-              )}&pageNumber=${pageNumber}&quality=high`}
+              lowSrc={pageImageUrl({
+                s3Key: edition.s3Key,
+                pageNumber: pageNumber,
+                quality: "low"
+              })}
+              highSrc={pageImageUrl({
+                s3Key: edition.s3Key,
+                editionId,
+                pageNumber: pageNumber,
+                quality: "high"
+              })}
               alt="page"
               imgStyle={{
                 pointerEvents: "none",
@@ -313,6 +320,7 @@ function ReaderPage() {
                       "/articles/extract",
                       {
                         s3Key: edition.s3Key,
+                        editionId,
                         pageNumber: Number(pageNumber),
                         mask,
                         newspaperName: edition.newspaperName,

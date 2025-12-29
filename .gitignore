@@ -2,7 +2,7 @@
 node_modules/
 
 # Env
-.env
+.env*
 
 # React
 frontend/epaper-frontend/node_modules/

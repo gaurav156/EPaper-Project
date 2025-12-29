@@ -2,6 +2,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const AdminSession = require("../models/AdminSession");
+const AuditLog = require("../models/AuditLog");
 const requireAdmin = require("../middleware/requireAdmin");
 const {
   signAccessToken,
@@ -52,8 +54,19 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      return res.status(423).json({
+        message: "Account locked. Try later."
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      user.failedLoginAttempts++;
+      if (user.failedLoginAttempts >= 5) {
+        user.lockUntil = Date.now() + 15 * 60 * 1000;
+      }
+      await user.save();
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -61,20 +74,39 @@ router.post("/login", async (req, res) => {
     const refreshToken = signRefreshToken(user);
 
     user.refreshTokenHash = hashToken(refreshToken);
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
     await user.save();
+
+    await AdminSession.create({
+      userId: user._id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      lastSeenAt: new Date(),
+      expiresAt: Date.now() + 7*24*60*60*1000
+    });
+
+    await AuditLog.create({
+      userId: user._id,
+      action: "ADMIN_LOGIN_SUCCESS",
+      ip: req.ip,
+      userAgent: req.headers["user-agent"]
+    });
+
+    const isProd = process.env.NODE_ENV === "production";
 
     // Cookies
     res
       .cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        secure: isProd,
+        sameSite: isProd ? "strict" : "lax",
         maxAge: 15 * 60 * 1000
       })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        secure: isProd,
+        sameSite: isProd ? "strict" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       })
       .json({ success: true });

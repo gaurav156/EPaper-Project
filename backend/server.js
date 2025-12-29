@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
+require("./utils/imageCleanupScheduler");
 
 const app = express();
 const cookieParser = require("cookie-parser");
@@ -64,6 +65,15 @@ app.use("/api/editions", editionRoutes);
 
 const adminRoutes = require("./routes/admin");
 app.use("/api/admin", adminRoutes);
+
+const adminAuditRoutes = require("./routes/adminAudit");
+app.use("/api/admin/audit", adminAuditRoutes);
+
+const adminSessions = require("./routes/adminSessions");
+app.use("/api/admin/sessions", adminSessions);
+
+const adminMetrics = require("./routes/adminMetrics");
+app.use("/api/admin/metrics", adminMetrics);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
